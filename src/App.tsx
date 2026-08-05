@@ -9,9 +9,11 @@ const PdfRotate = lazy(() => import('./tools/PdfRotate'))
 const PdfToImages = lazy(() => import('./tools/PdfToImages'))
 const PdfPageNumbers = lazy(() => import('./tools/PdfPageNumbers'))
 const ImageConverter = lazy(() => import('./tools/ImageConverter'))
+const HwpToPdf = lazy(() => import('./tools/HwpToPdf'))
 
-type Route = '/' | '/image-compress' | '/image-convert' | '/heic-to-jpg' | '/images-to-pdf' | '/pdf-merge' | '/pdf-split' | '/pdf-rotate' | '/pdf-to-jpg' | '/pdf-page-numbers'
+type Route = '/' | '/image-compress' | '/image-convert' | '/heic-to-jpg' | '/images-to-pdf' | '/pdf-merge' | '/pdf-split' | '/pdf-rotate' | '/pdf-to-jpg' | '/pdf-page-numbers' | '/hwp-to-pdf'
 export const tools = [
+  { path: '/hwp-to-pdf' as Route, icon: '한', tone: 'lime', title: 'HWP → PDF', description: '한글 문서를 기기 안에서 PDF로', meta: 'HWP · HWPX · BETA' },
   { path: '/image-compress' as Route, icon: '↘', tone: 'lime', title: '이미지 용량 줄이기', description: '화질은 그대로, 파일은 가볍게', meta: 'JPG · PNG · WEBP' },
   { path: '/pdf-merge' as Route, icon: '+', tone: 'blue', title: 'PDF 합치기', description: '여러 문서를 원하는 순서로 하나로', meta: '최대 10개' },
   { path: '/pdf-split' as Route, icon: 'S', tone: 'orange', title: 'PDF 나누기', description: '필요한 페이지 구간만 새 문서로', meta: '최대 200페이지' },
@@ -34,6 +36,7 @@ const routeInfo: Record<Route, { title: string; description: string }> = {
   '/pdf-rotate': { title: 'PDF 회전 — 파일뚝딱', description: 'PDF의 모든 페이지를 90도, 180도 또는 270도 회전하세요.' },
   '/pdf-to-jpg': { title: 'PDF JPG 변환 — 파일뚝딱', description: 'PDF의 각 페이지를 고화질 JPG 이미지로 변환하세요.' },
   '/pdf-page-numbers': { title: 'PDF 페이지 번호 — 파일뚝딱', description: 'PDF 문서 위쪽 또는 아래쪽에 페이지 번호를 추가하세요.' },
+  '/hwp-to-pdf': { title: 'HWP PDF 변환 — 파일뚝딱', description: 'HWP와 HWPX 문서를 서버 업로드 없이 브라우저에서 PDF로 변환하세요.' },
 }
 
 export default function App() {
@@ -82,6 +85,7 @@ export default function App() {
         {route === '/pdf-to-jpg' && <PdfToImages />}
         {route === '/pdf-page-numbers' && <PdfPageNumbers />}
         {route === '/image-convert' && <ImageConverter />}
+        {route === '/hwp-to-pdf' && <HwpToPdf />}
       </Suspense>
       <footer className="site-footer"><div className="footer-inner"><div><span className="footer-logo">파일뚝딱</span><p>복잡한 파일 작업을 가볍고 안전하게.</p></div><div className="footer-note"><span>100% 브라우저 처리</span><span>서버 저장 없음</span><span>회원가입 없음</span></div></div></footer>
     </div>
@@ -110,13 +114,13 @@ function Home({ navigate }: { navigate: (path: Route) => void }) {
         <div className="tool-card-grid">
           {tools.map((tool, index) => (
             <button className={`tool-card ${tool.tone}`} key={tool.path} type="button" onClick={() => navigate(tool.path)}>
-              <span className="tool-index">0{index + 1}</span><span className="tool-icon">{tool.icon}</span>
+              <span className="tool-index">{String(index + 1).padStart(2, '0')}</span><span className="tool-icon">{tool.icon}</span>
               <span className="tool-copy"><strong>{tool.title}</strong><span>{tool.description}</span></span>
               <span className="tool-meta">{tool.meta}</span><span className="tool-arrow">↗</span>
             </button>
           ))}
         </div>
-        <div className="hwp-roadmap"><span>HWP CONVERSION</span><div><strong>HWP → PDF는 공식 변환 엔진 연동을 검토 중이에요.</strong><p>문서가 서버로 전송되는 기능인 만큼 한컴 라이선스, 암호화 전송, 즉시 삭제 정책까지 갖춘 뒤 제공합니다. PDF → HWP는 한컴 공식 변환 API에서 지원하지 않아 품질을 보장할 수 있는 방식부터 검토합니다.</p></div></div>
+        <div className="hwp-roadmap"><span>NEW · BETA</span><div><strong>HWP → PDF도 파일을 올리지 않고 변환해요.</strong><p>HWP 5.0과 HWPX를 브라우저에서 직접 읽어 PDF로 만듭니다. 복잡한 글꼴·배치·배포용 문서는 원본과 차이가 날 수 있어 변환 결과를 꼭 확인해 주세요.</p><button className="button secondary small" type="button" onClick={() => navigate('/hwp-to-pdf')}>HWP 변환 열기</button></div></div>
       </section>
       <section className="promise-section"><div className="page-shell promise-inner">
         <div className="promise-title"><span className="privacy-large-icon">✓</span><div><span className="eyebrow">PRIVACY FIRST</span><h2>업로드하지 않는 게<br />가장 안전하니까.</h2></div></div>
