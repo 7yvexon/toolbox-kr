@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PDFDocument } from 'pdf-lib'
 import FileDrop from '../components/FileDrop'
 import { downloadBlob, formatBytes, renderImage } from '../lib/files'
+import { validateImageBatch } from '../lib/fileValidation'
 import { ToolShell } from './ImageCompressor'
 
 export default function ImagesToPdf() {
@@ -11,8 +12,17 @@ export default function ImagesToPdf() {
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   const previews = useMemo(() => files.map((file) => ({ file, url: URL.createObjectURL(file) })), [files])
+  useEffect(() => () => previews.forEach(({ url }) => URL.revokeObjectURL(url)), [previews])
 
-  const addFiles = (incoming: File[]) => { setFiles((current) => [...current, ...incoming].slice(0, 30)); setError('') }
+  const addFiles = async (incoming: File[]) => {
+    try {
+      await validateImageBatch(incoming, files)
+      setFiles((current) => [...current, ...incoming])
+      setError('')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '사진 파일을 확인하지 못했습니다.')
+    }
+  }
   const move = (index: number, direction: -1 | 1) => {
     setFiles((current) => {
       const target = index + direction
@@ -52,7 +62,7 @@ export default function ImagesToPdf() {
   return (
     <ToolShell eyebrow="IMAGES TO PDF" title="사진을 PDF로 변환" description="여러 장의 사진을 원하는 순서대로 정리해 하나의 PDF로 만드세요.">
       {!files.length ? (
-        <FileDrop multiple accept="image/jpeg,image/png,image/webp" title="사진을 여러 장 놓으세요" hint="JPG, PNG, WEBP · 최대 30장" onFiles={addFiles} />
+        <><FileDrop multiple accept="image/jpeg,image/png,image/webp" title="사진을 여러 장 놓으세요" hint="JPG, PNG, WEBP · 최대 30장, 전체 120MB" onFiles={addFiles} />{error && <p className="error-message drop-error">{error}</p>}</>
       ) : (
         <div className="pdf-workspace">
           <section className="image-list-card">
@@ -61,7 +71,7 @@ export default function ImagesToPdf() {
               {previews.map(({ file, url }, index) => (
                 <article className="thumbnail-item" key={`${file.name}-${file.lastModified}-${index}`}>
                   <span className="order-number">{index + 1}</span>
-                  <img src={url} alt="" onLoad={() => URL.revokeObjectURL(url)} />
+                  <img src={url} alt="" />
                   <div><strong>{file.name}</strong><span>{formatBytes(file.size)}</span></div>
                   <div className="order-actions">
                     <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label="앞으로 이동">←</button>

@@ -13,7 +13,11 @@ export const downloadBlob = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = filename
+  const safeName = filename
+    .replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g, '_')
+    .replace(/[. ]+$/g, '')
+    .slice(0, 180)
+  anchor.download = safeName || 'download'
   document.body.appendChild(anchor)
   anchor.click()
   anchor.remove()
@@ -34,6 +38,7 @@ export async function renderImage(
   options: { maxWidth?: number; type?: string; quality?: number } = {},
 ) {
   const image = await loadImage(file)
+  validateImageDimensions(image.naturalWidth, image.naturalHeight)
   const scale = options.maxWidth && image.naturalWidth > options.maxWidth
     ? options.maxWidth / image.naturalWidth : 1
   const width = Math.round(image.naturalWidth * scale)
@@ -60,3 +65,4 @@ export async function renderImage(
   })
   return { blob, width, height }
 }
+import { validateImageDimensions } from './fileValidation'

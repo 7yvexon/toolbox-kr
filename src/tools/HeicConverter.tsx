@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import heic2any from 'heic2any'
 import FileDrop from '../components/FileDrop'
 import { downloadBlob, formatBytes, replaceExtension } from '../lib/files'
+import { validateHeic } from '../lib/fileValidation'
 import { ToolShell } from './ImageCompressor'
 
 export default function HeicConverter() {
@@ -13,7 +14,23 @@ export default function HeicConverter() {
   const resultUrl = useMemo(() => result ? URL.createObjectURL(result) : '', [result])
 
   useEffect(() => () => { if (resultUrl) URL.revokeObjectURL(resultUrl) }, [resultUrl])
-  const select = (files: File[]) => { setFile(files[0] || null); setResult(null); setError('') }
+  const select = async (files: File[]) => {
+    const nextFile = files[0] || null
+    setResult(null)
+    if (!nextFile) {
+      setFile(null)
+      setError('')
+      return
+    }
+    try {
+      await validateHeic(nextFile)
+      setFile(nextFile)
+      setError('')
+    } catch (reason) {
+      setFile(null)
+      setError(reason instanceof Error ? reason.message : 'HEIC 파일을 확인하지 못했습니다.')
+    }
+  }
 
   const convert = async () => {
     if (!file) return
@@ -32,13 +49,13 @@ export default function HeicConverter() {
   return (
     <ToolShell eyebrow="HEIC TO JPG" title="HEIC를 JPG로 변환" description="아이폰 사진을 어디서나 열리는 JPG 파일로 바꿔보세요.">
       {!file ? (
-        <FileDrop accept=".heic,.heif,image/heic,image/heif" title="HEIC 사진을 여기에 놓으세요" hint="HEIC, HEIF · 최대 30MB" onFiles={select} />
+        <><FileDrop accept=".heic,.heif,image/heic,image/heif" title="HEIC 사진을 여기에 놓으세요" hint="HEIC, HEIF · 최대 30MB" onFiles={select} />{error && <p className="error-message drop-error">{error}</p>}</>
       ) : (
         <div className="workspace-grid compact-workspace">
           <section className="selected-file-card">
             <div className="file-type-icon">HEIC</div>
             <div><strong>{file.name}</strong><span>{formatBytes(file.size)}</span></div>
-            <button className="text-button" type="button" onClick={() => select([])}>삭제</button>
+            <button className="text-button" type="button" onClick={() => { void select([]) }}>삭제</button>
           </section>
           <section className="control-card">
             <div className="control-heading"><span>JPG 화질</span><strong>{quality}%</strong></div>

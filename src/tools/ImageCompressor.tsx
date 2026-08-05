@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import FileDrop from '../components/FileDrop'
 import { downloadBlob, formatBytes, renderImage, replaceExtension } from '../lib/files'
+import { validateStandardImage } from '../lib/fileValidation'
 
 export default function ImageCompressor() {
   const [file, setFile] = useState<File | null>(null)
@@ -18,10 +19,22 @@ export default function ImageCompressor() {
     if (resultUrl) URL.revokeObjectURL(resultUrl)
   }, [sourceUrl, resultUrl])
 
-  const choose = (files: File[]) => {
-    setFile(files[0] || null)
+  const choose = async (files: File[]) => {
+    const nextFile = files[0] || null
     setResult(null)
-    setError('')
+    if (!nextFile) {
+      setFile(null)
+      setError('')
+      return
+    }
+    try {
+      await validateStandardImage(nextFile)
+      setFile(nextFile)
+      setError('')
+    } catch (reason) {
+      setFile(null)
+      setError(reason instanceof Error ? reason.message : '이미지 파일을 확인하지 못했습니다.')
+    }
   }
 
   const compress = async () => {
@@ -48,7 +61,7 @@ export default function ImageCompressor() {
   return (
     <ToolShell eyebrow="IMAGE COMPRESS" title="이미지 용량 줄이기" description="화질은 자연스럽게 유지하고, 제출 가능한 크기로 빠르게 줄여보세요.">
       {!file ? (
-        <FileDrop accept="image/jpeg,image/png,image/webp" title="이미지를 여기에 놓으세요" hint="JPG, PNG, WEBP · 최대 30MB" onFiles={choose} />
+        <><FileDrop accept="image/jpeg,image/png,image/webp" title="이미지를 여기에 놓으세요" hint="JPG, PNG, WEBP · 최대 30MB" onFiles={choose} />{error && <p className="error-message drop-error">{error}</p>}</>
       ) : (
         <div className="workspace-grid">
           <section className="preview-card">
@@ -58,7 +71,7 @@ export default function ImageCompressor() {
             </div>
             <div className="file-summary">
               <div><strong>{file.name}</strong><span>원본 {formatBytes(file.size)}</span></div>
-              <button className="text-button" type="button" onClick={() => choose([])}>다른 파일</button>
+              <button className="text-button" type="button" onClick={() => { void choose([]) }}>다른 파일</button>
             </div>
           </section>
 
