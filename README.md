@@ -11,8 +11,14 @@
 | 도구 | 입력 | 출력 | 제한 |
 | --- | --- | --- | --- |
 | 이미지 용량 줄이기 | JPG, PNG, WEBP | JPG, PNG, WEBP | 파일당 30MB, 4천만 픽셀 |
+| 이미지 형식 변환 | JPG, PNG, WEBP | JPG, PNG, WEBP 또는 ZIP | 최대 30장, 전체 120MB |
 | HEIC → JPG | HEIC, HEIF | JPG | 파일당 30MB |
 | 사진 → PDF | JPG, PNG, WEBP | PDF | 최대 30장, 전체 120MB |
+| PDF 합치기 | PDF 최대 10개 | PDF | 전체 150MB, 결과 300페이지 |
+| PDF 나누기 | PDF | 선택한 구간 PDF | 최대 200페이지 |
+| PDF 회전 | PDF | 회전된 PDF | 90°, 180°, 270° |
+| PDF → JPG | PDF | JPG 또는 ZIP | 최대 50페이지 |
+| PDF 페이지 번호 | PDF | 번호가 추가된 PDF | 최대 200페이지 |
 
 파일 확장자만 신뢰하지 않고 실제 파일 헤더, MIME 형식, 크기와 이미지 해상도를 처리 전에 확인합니다.
 
@@ -32,6 +38,8 @@
 - Vite 7
 - `heic2any` — HEIC/HEIF 디코딩
 - `pdf-lib` — 브라우저 PDF 생성
+- PDF.js — PDF 페이지 렌더링
+- JSZip — 일괄 변환 결과 압축
 - Vercel 정적 배포 설정
 
 ## 로컬 실행
@@ -53,6 +61,7 @@ npm run dev
 | --- | --- |
 | `npm run dev` | 개발 서버 실행 |
 | `npm run typecheck` | TypeScript 검사 |
+| `npm run test` | 파일 검증 및 PDF 변환 자동 테스트 |
 | `npm run build` | 프로덕션 번들 생성 |
 | `npm run preview` | 프로덕션 번들 로컬 확인 |
 | `npm run security:audit` | high 이상 npm 취약점 검사 |
@@ -92,6 +101,12 @@ Vercel에서 저장소를 연결한 뒤 기본 Vite 설정으로 배포할 수 �
 - Node.js: 22.x
 
 `vercel.json`은 SPA 라우팅과 프로덕션 보안 헤더를 함께 관리합니다.
+
+## HWP 변환 계획
+
+정확한 `HWP/HWPX → PDF`는 브라우저 전용 라이브러리가 아니라 별도로 구매·설치한 한컴 통합문서뷰어 또는 한글 SDK가 필요합니다. 공식 변환 API는 `PDF → HWP/HWPX`를 지원하지 않습니다. 품질을 보장할 수 없는 변환을 제공하지 않으며, 라이선스 계약과 격리된 변환 서버가 준비된 뒤 별도 동의형 기능으로 연결할 계획입니다.
+
+자세한 기술·보안 기준은 [HWP 변환 아키텍처](docs/HWP_CONVERSION.md)를 참고하세요.
 
 ## 기여
 

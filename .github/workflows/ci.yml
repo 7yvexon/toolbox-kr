@@ -31,6 +31,9 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Test file and PDF operations
+        run: npm run test
+
       - name: Build production bundle
         run: npm run build
 

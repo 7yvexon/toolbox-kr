@@ -3,18 +3,37 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 const ImageCompressor = lazy(() => import('./tools/ImageCompressor'))
 const HeicConverter = lazy(() => import('./tools/HeicConverter'))
 const ImagesToPdf = lazy(() => import('./tools/ImagesToPdf'))
+const PdfMerge = lazy(() => import('./tools/PdfMerge'))
+const PdfSplit = lazy(() => import('./tools/PdfSplit'))
+const PdfRotate = lazy(() => import('./tools/PdfRotate'))
+const PdfToImages = lazy(() => import('./tools/PdfToImages'))
+const PdfPageNumbers = lazy(() => import('./tools/PdfPageNumbers'))
+const ImageConverter = lazy(() => import('./tools/ImageConverter'))
 
-type Route = '/' | '/image-compress' | '/heic-to-jpg' | '/images-to-pdf'
-const tools = [
+type Route = '/' | '/image-compress' | '/image-convert' | '/heic-to-jpg' | '/images-to-pdf' | '/pdf-merge' | '/pdf-split' | '/pdf-rotate' | '/pdf-to-jpg' | '/pdf-page-numbers'
+export const tools = [
   { path: '/image-compress' as Route, icon: '↘', tone: 'lime', title: '이미지 용량 줄이기', description: '화질은 그대로, 파일은 가볍게', meta: 'JPG · PNG · WEBP' },
+  { path: '/pdf-merge' as Route, icon: '+', tone: 'blue', title: 'PDF 합치기', description: '여러 문서를 원하는 순서로 하나로', meta: '최대 10개' },
+  { path: '/pdf-split' as Route, icon: 'S', tone: 'orange', title: 'PDF 나누기', description: '필요한 페이지 구간만 새 문서로', meta: '최대 200페이지' },
+  { path: '/pdf-to-jpg' as Route, icon: 'J', tone: 'lime', title: 'PDF → JPG', description: '각 페이지를 선명한 이미지로', meta: '최대 50페이지' },
   { path: '/heic-to-jpg' as Route, icon: 'H', tone: 'orange', title: 'HEIC → JPG', description: '아이폰 사진을 호환되는 형식으로', meta: 'HEIC · HEIF' },
   { path: '/images-to-pdf' as Route, icon: 'P', tone: 'blue', title: '사진 → PDF', description: '여러 사진을 한 문서로 깔끔하게', meta: '최대 30장' },
+  { path: '/image-convert' as Route, icon: 'C', tone: 'blue', title: '이미지 형식 변환', description: 'JPG, PNG, WEBP를 한꺼번에', meta: '최대 30장' },
+  { path: '/pdf-rotate' as Route, icon: '↻', tone: 'lime', title: 'PDF 회전', description: '뒤집힌 페이지를 한 번에 바로잡기', meta: '90° · 180° · 270°' },
+  { path: '/pdf-page-numbers' as Route, icon: '#', tone: 'orange', title: 'PDF 페이지 번호', description: '제출 문서에 번호를 깔끔하게', meta: '위 · 아래' },
 ]
+const navTools = tools.slice(0, 4)
 const routeInfo: Record<Route, { title: string; description: string }> = {
   '/': { title: '파일뚝딱 — 안전한 이미지·PDF 도구', description: '이미지 압축, HEIC JPG 변환, 이미지 PDF 변환을 설치 없이 안전하게 처리하세요.' },
   '/image-compress': { title: '이미지 용량 줄이기 — 파일뚝딱', description: 'JPG, PNG, WEBP 이미지의 용량을 브라우저에서 안전하게 줄이세요.' },
+  '/image-convert': { title: '이미지 형식 변환 — 파일뚝딱', description: 'JPG, PNG, WEBP 이미지를 브라우저에서 원하는 형식으로 일괄 변환하세요.' },
   '/heic-to-jpg': { title: 'HEIC JPG 변환 — 파일뚝딱', description: '아이폰 HEIC 사진을 설치 없이 JPG로 변환하세요.' },
   '/images-to-pdf': { title: '사진 PDF 변환 — 파일뚝딱', description: '여러 장의 사진을 하나의 PDF 문서로 변환하세요.' },
+  '/pdf-merge': { title: 'PDF 합치기 — 파일뚝딱', description: '여러 PDF 파일을 원하는 순서대로 하나의 문서로 합치세요.' },
+  '/pdf-split': { title: 'PDF 나누기 — 파일뚝딱', description: 'PDF에서 필요한 페이지 구간만 추출해 새 문서로 저장하세요.' },
+  '/pdf-rotate': { title: 'PDF 회전 — 파일뚝딱', description: 'PDF의 모든 페이지를 90도, 180도 또는 270도 회전하세요.' },
+  '/pdf-to-jpg': { title: 'PDF JPG 변환 — 파일뚝딱', description: 'PDF의 각 페이지를 고화질 JPG 이미지로 변환하세요.' },
+  '/pdf-page-numbers': { title: 'PDF 페이지 번호 — 파일뚝딱', description: 'PDF 문서 위쪽 또는 아래쪽에 페이지 번호를 추가하세요.' },
 }
 
 export default function App() {
@@ -46,7 +65,7 @@ export default function App() {
         <div className="nav-shell">
           <button className="brand" type="button" onClick={() => navigate('/')} aria-label="파일뚝딱 홈"><span className="brand-mark"><i></i><i></i></span><span>파일<strong>뚝딱</strong></span></button>
           <nav className={menuOpen ? 'nav-links is-open' : 'nav-links'}>
-            {tools.map((tool) => <button className={route === tool.path ? 'active' : ''} type="button" key={tool.path} onClick={() => navigate(tool.path)}>{tool.title}</button>)}
+            {navTools.map((tool) => <button className={route === tool.path ? 'active' : ''} type="button" key={tool.path} onClick={() => navigate(tool.path)}>{tool.title}</button>)}
           </nav>
           <div className="header-safe"><span></span>내 기기에서 안전 처리</div>
           <button className="menu-button" type="button" onClick={() => setMenuOpen((value) => !value)} aria-label="메뉴 열기">☰</button>
@@ -57,6 +76,12 @@ export default function App() {
         {route === '/image-compress' && <ImageCompressor />}
         {route === '/heic-to-jpg' && <HeicConverter />}
         {route === '/images-to-pdf' && <ImagesToPdf />}
+        {route === '/pdf-merge' && <PdfMerge />}
+        {route === '/pdf-split' && <PdfSplit />}
+        {route === '/pdf-rotate' && <PdfRotate />}
+        {route === '/pdf-to-jpg' && <PdfToImages />}
+        {route === '/pdf-page-numbers' && <PdfPageNumbers />}
+        {route === '/image-convert' && <ImageConverter />}
       </Suspense>
       <footer className="site-footer"><div className="footer-inner"><div><span className="footer-logo">파일뚝딱</span><p>복잡한 파일 작업을 가볍고 안전하게.</p></div><div className="footer-note"><span>100% 브라우저 처리</span><span>서버 저장 없음</span><span>회원가입 없음</span></div></div></footer>
     </div>
@@ -91,6 +116,7 @@ function Home({ navigate }: { navigate: (path: Route) => void }) {
             </button>
           ))}
         </div>
+        <div className="hwp-roadmap"><span>HWP CONVERSION</span><div><strong>HWP → PDF는 공식 변환 엔진 연동을 검토 중이에요.</strong><p>문서가 서버로 전송되는 기능인 만큼 한컴 라이선스, 암호화 전송, 즉시 삭제 정책까지 갖춘 뒤 제공합니다. PDF → HWP는 한컴 공식 변환 API에서 지원하지 않아 품질을 보장할 수 있는 방식부터 검토합니다.</p></div></div>
       </section>
       <section className="promise-section"><div className="page-shell promise-inner">
         <div className="promise-title"><span className="privacy-large-icon">✓</span><div><span className="eyebrow">PRIVACY FIRST</span><h2>업로드하지 않는 게<br />가장 안전하니까.</h2></div></div>
