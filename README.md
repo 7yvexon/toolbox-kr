@@ -10,6 +10,7 @@
 
 | 도구 | 입력 | 출력 | 제한 |
 | --- | --- | --- | --- |
+| HWP → PDF (베타) | HWP 5.0, HWPX | 이미지형 PDF | 파일당 20MB, 최대 50페이지 |
 | 이미지 용량 줄이기 | JPG, PNG, WEBP | JPG, PNG, WEBP | 파일당 30MB, 4천만 픽셀 |
 | 이미지 형식 변환 | JPG, PNG, WEBP | JPG, PNG, WEBP 또는 ZIP | 최대 30장, 전체 120MB |
 | HEIC → JPG | HEIC, HEIF | JPG | 파일당 30MB |
@@ -37,6 +38,7 @@
 - React 19 + TypeScript
 - Vite 7
 - `heic2any` — HEIC/HEIF 디코딩
+- `@rhwp/core` — HWP/HWPX WASM 파싱·렌더링
 - `pdf-lib` — 브라우저 PDF 생성
 - PDF.js — PDF 페이지 렌더링
 - JSZip — 일괄 변환 결과 압축
@@ -73,7 +75,7 @@ npm run dev
 src/
 ├─ components/          공통 UI
 ├─ lib/                 파일 검증·변환 보조 함수
-└─ tools/               이미지 압축, HEIC, PDF 도구
+└─ tools/               이미지 압축, HEIC, HWP, PDF 도구
 .github/
 ├─ workflows/           CI 자동 검사
 ├─ CODEOWNERS            중요 파일 소유자
@@ -102,9 +104,11 @@ Vercel에서 저장소를 연결한 뒤 기본 Vite 설정으로 배포할 수 �
 
 `vercel.json`은 SPA 라우팅과 프로덕션 보안 헤더를 함께 관리합니다.
 
-## HWP 변환 계획
+## HWP 변환
 
-정확한 `HWP/HWPX → PDF`는 브라우저 전용 라이브러리가 아니라 별도로 구매·설치한 한컴 통합문서뷰어 또는 한글 SDK가 필요합니다. 공식 변환 API는 `PDF → HWP/HWPX`를 지원하지 않습니다. 품질을 보장할 수 없는 변환을 제공하지 않으며, 라이선스 계약과 격리된 변환 서버가 준비된 뒤 별도 동의형 기능으로 연결할 계획입니다.
+`HWP 5.0/HWPX → PDF`는 `@rhwp/core` 0.8.x의 WebAssembly 렌더러를 지연 로딩해 브라우저 안에서 처리합니다. 서버 업로드는 없으며, 렌더링된 각 페이지를 이미지형 PDF로 묶기 때문에 결과 PDF의 텍스트 선택은 제한됩니다. 복잡한 글꼴, 표, 수식, 차트, 배포용 문서는 원본과 차이가 날 수 있으므로 베타로 제공하고 결과 확인을 안내합니다.
+
+한컴 공식 SDK/통합문서뷰어를 사용하는 서버 변환은 향후 정확도 우선 선택지로 남겨 둡니다. `PDF → HWP/HWPX`는 공식 변환 API가 지원하지 않아 제공하지 않습니다.
 
 자세한 기술·보안 기준은 [HWP 변환 아키텍처](docs/HWP_CONVERSION.md)를 참고하세요.
 
@@ -115,3 +119,5 @@ Vercel에서 저장소를 연결한 뒤 기본 Vite 설정으로 배포할 수 �
 ## 라이선스
 
 현재 별도 오픈소스 라이선스를 부여하지 않았습니다. 저장소 소유자의 명시적 허가 없이 복제, 배포 또는 상업적으로 사용할 수 없습니다.
+
+서드파티 의존성은 각 라이선스를 따릅니다. HWP 렌더러 `@rhwp/core`는 MIT 라이선스이며 한글과컴퓨터와 제휴·후원·승인 관계가 없는 독립 오픈소스 프로젝트입니다.
