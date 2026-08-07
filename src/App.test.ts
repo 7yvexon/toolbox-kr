@@ -18,6 +18,10 @@ describe('tool catalog', () => {
   })
 
   it('publishes support and policy routes', () => {
-    expect(Object.keys(routeInfo)).toEqual(expect.arrayContaining(['/support', '/privacy', '/terms', '/contact']))
+    expect(Object.keys(routeInfo)).toEqual(expect.arrayContaining(['/about', '/support', '/privacy', '/terms', '/legal', '/contact']))
+  })
+
+  it('uses the 파일정비소 brand on every route', () => {
+    expect(Object.values(routeInfo).every((route) => route.title.includes('파일정비소'))).toBe(true)
   })
 })
