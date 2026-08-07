@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/generate-static-routes.mjs",
+    "build:production": "node scripts/check-production-env.mjs && npm run build",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",
     "security:audit": "npm audit --audit-level=high",
-    "check": "npm run test && npm run build && npm run security:audit"
+    "check": "npm run test && npm run build && npm run security:audit",
+    "check:offline": "npm run test && npm run build"
   },
   "engines": {
     "node": ">=22",

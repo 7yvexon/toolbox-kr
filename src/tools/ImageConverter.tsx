@@ -39,7 +39,7 @@ export default function ImageConverter() {
       } else {
         const zip = new JSZip()
         results.forEach((result, index) => zip.file(`${String(index + 1).padStart(2, '0')}_${result.filename}`, result.blob))
-        downloadBlob(await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } }), `파일뚝딱_${extension}_변환_${results.length}개.zip`)
+      downloadBlob(await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } }), `파일정비소_${extension}_변환_${results.length}개.zip`)
       }
     } catch (reason) {
       setError(errorMessage(reason, '이미지 형식을 변환하는 중 문제가 발생했습니다.'))

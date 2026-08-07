@@ -1,4 +1,4 @@
-# 파일뚝딱
+# 파일정비소
 
 [![CI](https://github.com/7yvexon/toolbox-kr/actions/workflows/ci.yml/badge.svg)](https://github.com/7yvexon/toolbox-kr/actions/workflows/ci.yml)
 
@@ -10,7 +10,7 @@
 
 | 도구 | 입력 | 출력 | 제한 |
 | --- | --- | --- | --- |
-| HWP → PDF (베타) | HWP 5.0, HWPX | 이미지형 PDF | 파일당 20MB, 최대 50페이지 |
+| HWP/HWPX → 호환 PDF | HWP 5.0, HWPX | 내용 확인용 이미지형 PDF | 파일당 20MB, HWP 최대 50페이지 |
 | 이미지 용량 줄이기 | JPG, PNG, WEBP | JPG, PNG, WEBP | 파일당 30MB, 4천만 픽셀 |
 | 이미지 형식 변환 | JPG, PNG, WEBP | JPG, PNG, WEBP 또는 ZIP | 최대 30장, 전체 120MB |
 | HEIC → JPG | HEIC, HEIF | JPG | 파일당 30MB |
@@ -36,7 +36,7 @@
 ## 기술 구성
 
 - React 19 + TypeScript
-- Vite 7
+- Vite 8
 - `heic2any` — HEIC/HEIF 디코딩
 - `@rhwp/core` — HWP/HWPX WASM 파싱·렌더링
 - `pdf-lib` — 브라우저 PDF 생성
@@ -64,7 +64,8 @@ npm run dev
 | `npm run dev` | 개발 서버 실행 |
 | `npm run typecheck` | TypeScript 검사 |
 | `npm run test` | 파일 검증 및 PDF 변환 자동 테스트 |
-| `npm run build` | 프로덕션 번들 생성 |
+| `npm run build` | 로컬 확인용 번들 생성 |
+| `npm run build:production` | 공개 주소·문의 이메일 확인 후 배포 번들 생성 |
 | `npm run preview` | 프로덕션 번들 로컬 확인 |
 | `npm run security:audit` | high 이상 npm 취약점 검사 |
 | `npm run check` | 빌드와 보안 감사를 한 번에 실행 |
@@ -96,19 +97,24 @@ GitHub Actions는 공식 액션도 변경 불가능한 커밋 SHA로 고정하�
 
 ## 배포
 
-Vercel에서 저장소를 연결한 뒤 기본 Vite 설정으로 배포할 수 있습니다.
+Vercel, Netlify 또는 Cloudflare Pages에서 저장소를 연결한 뒤 정적 사이트로 배포할 수 있습니다. 수익화할 배포 서비스의 무료 플랜이 상업적 사용을 허용하는지는 별도로 확인해야 합니다.
 
-- Build command: `npm run build`
+- Build command: `npm run build:production`
 - Output directory: `dist`
 - Node.js: 22.x
+
+배포 환경 변수:
+
+- `VITE_SITE_URL`: 실제 공개 주소. 설정하면 canonical URL, `sitemap.xml`, `robots.txt`가 배포 주소에 맞게 생성됩니다.
+- `VITE_CONTACT_EMAIL`: 공식 문의 이메일. 설정하지 않으면 문의 페이지가 미설정 상태를 명확히 표시합니다.
 
 `vercel.json`은 SPA 라우팅과 프로덕션 보안 헤더를 함께 관리합니다.
 
 ## HWP 변환
 
-`HWP 5.0/HWPX → PDF`는 `@rhwp/core` 0.8.x의 WebAssembly 렌더러를 지연 로딩해 브라우저 안에서 처리합니다. 서버 업로드는 없으며, 렌더링된 각 페이지를 이미지형 PDF로 묶기 때문에 결과 PDF의 텍스트 선택은 제한됩니다. 복잡한 글꼴, 표, 수식, 차트, 배포용 문서는 원본과 차이가 날 수 있으므로 베타로 제공하고 결과 확인을 안내합니다.
+`HWP 5.0/HWPX → 호환 PDF`는 원본과 동일한 정밀 변환이 아닙니다. HWP 5.0은 `@rhwp/core`의 WebAssembly 렌더러로 페이지를 이미지화하고, HWPX는 일반 본문과 단순 표를 안전한 호환 레이아웃으로 다시 그립니다. HWPX의 이미지, 도형, 수식, 차트, 병합 셀 등 유지할 수 없는 요소는 변환 전에 표시하며 사용자의 명시적 확인 없이는 변환하지 않습니다.
 
-한컴 공식 SDK/통합문서뷰어를 사용하는 서버 변환은 향후 정확도 우선 선택지로 남겨 둡니다. `PDF → HWP/HWPX`는 공식 변환 API가 지원하지 않아 제공하지 않습니다.
+원본과 동일한 PDF가 필요하면 한컴오피스의 `PDF로 저장하기`를 사용해야 합니다. 한컴 공식 SDK/통합문서뷰어와 적법한 서버 라이선스가 준비되기 전에는 정밀 변환이라고 표시하지 않습니다. `PDF → HWP/HWPX`도 정확도를 보장할 수 없어 제공하지 않습니다.
 
 자세한 기술·보안 기준은 [HWP 변환 아키텍처](docs/HWP_CONVERSION.md)를 참고하세요.
 

@@ -9,5 +9,7 @@ vite.config.d.ts
 .env.*
 !.env.example
 
+.dev-server*.log
+
 .DS_Store
 Thumbs.db

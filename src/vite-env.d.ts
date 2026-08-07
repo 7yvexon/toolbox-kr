@@ -1,5 +1,14 @@
 /// <reference types="vite/client" />
 
+interface ImportMetaEnv {
+  readonly VITE_CONTACT_EMAIL?: string
+  readonly VITE_SITE_URL?: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}
+
 declare module 'heic2any' {
   interface Heic2AnyOptions {
     blob: Blob

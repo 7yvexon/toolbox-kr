@@ -1,0 +1,11 @@
+{
+  "name": "파일정비소",
+  "short_name": "파일정비소",
+  "description": "내 브라우저에서 처리하는 이미지·PDF 도구",
+  "lang": "ko",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8f4",
+  "theme_color": "#194f37",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

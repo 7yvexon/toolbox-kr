@@ -36,7 +36,7 @@ export default function PdfMerge() {
     setError('')
     try {
       const output = await mergePdfFiles(files)
-      await downloadPdf(output, `파일뚝딱_합친문서_${files.length}개.pdf`)
+      await downloadPdf(output, `파일정비소_합친문서_${files.length}개.pdf`)
     } catch (reason) {
       setError(errorMessage(reason, 'PDF를 합치는 중 문제가 발생했습니다.'))
     } finally {

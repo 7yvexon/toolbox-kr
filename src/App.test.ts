@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { tools } from './App'
+import { routeInfo, tools } from './App'
 
 describe('tool catalog', () => {
   it('publishes ten distinct browser tools on the home screen', () => {
@@ -14,5 +14,10 @@ describe('tool catalog', () => {
 
   it('includes client-side HWP to PDF conversion', () => {
     expect(tools.map((tool) => tool.path)).toContain('/hwp-to-pdf')
+    expect(tools.find((tool) => tool.path === '/hwp-to-pdf')?.meta).toBe('정밀 변환 아님')
+  })
+
+  it('publishes support and policy routes', () => {
+    expect(Object.keys(routeInfo)).toEqual(expect.arrayContaining(['/support', '/privacy', '/terms', '/contact']))
   })
 })

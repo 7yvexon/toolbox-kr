@@ -1,0 +1,48 @@
+a:focus-visible{outline:3px solid #3b825947;outline-offset:3px}
+.skip-link{position:fixed;z-index:100;top:8px;left:8px;padding:10px 14px;border-radius:8px;background:#fff;color:var(--green);font-weight:800;transform:translateY(-150%)}
+.skip-link:focus{transform:none}
+.brand,.tool-card{text-decoration:none;color:inherit}
+.nav-links a{border:0;background:transparent;padding:8px 0;color:#5f6861;font-size:14px;font-weight:600;cursor:pointer;position:relative;text-decoration:none}
+.nav-links a:hover,.nav-links a.active{color:var(--ink)}
+.nav-links a.active:after{content:"";position:absolute;height:2px;left:0;right:0;bottom:1px;background:var(--green)}
+.support-status{display:grid;gap:4px;padding:13px 14px;border-radius:11px;font-size:11px;line-height:1.55}
+.support-status.warning{border:1px solid #e8c76c;background:#fff9e6;color:#684c12}
+.support-status span{color:inherit}
+.document-report{margin:14px 0;padding:15px;border:1px solid #dfe4dc;border-radius:12px;background:#f8faf6}
+.document-report>strong{font-size:12px}
+.document-report dl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.document-report dl div{padding:9px;border-radius:8px;background:#fff;text-align:center}
+.document-report dt{color:var(--muted);font-size:9px}
+.document-report dd{margin:3px 0 0;font-size:12px;font-weight:800}
+.document-report p{margin:10px 0 0;color:#765f2f;font-size:10px;line-height:1.6}
+.document-report .success-note{color:#266341}
+.acknowledgement{display:flex;align-items:flex-start;gap:9px;margin:16px 0;color:#4f5d53;font-size:10px;line-height:1.55;cursor:pointer}
+.acknowledgement input{margin-top:2px;accent-color:var(--green)}
+.cancel-button{margin-top:8px!important}
+.exact-conversion-help{max-width:920px;margin:28px auto 0;padding:19px 21px;border-left:4px solid var(--green);border-radius:0 12px 12px 0;background:#eef3e9}
+.exact-conversion-help strong{font-size:13px}
+.exact-conversion-help p{margin:7px 0 0;color:#5d695f;font-size:11px;line-height:1.75}
+.legal-page{padding:75px 0 110px;min-height:650px}
+.legal-page>header{max-width:760px;margin-bottom:42px}
+.legal-page h1{margin:10px 0 12px;font-size:clamp(38px,5vw,58px);letter-spacing:-.055em}
+.legal-page>header p{color:var(--muted);font-size:11px}
+.legal-content{max-width:850px;display:grid;gap:16px}
+.legal-content section,.status-panel{padding:26px 28px;border:1px solid #dde3da;border-radius:17px;background:#fff;box-shadow:0 13px 35px #28372d0d}
+.legal-content h2{margin:0 0 10px;font-size:18px}
+.legal-content p{margin:0;color:#5f6961;font-size:13px;line-height:1.85}
+.support-table{display:grid;margin:16px 0;border:1px solid #e0e5de;border-radius:11px;overflow:hidden}
+.support-table>div{display:grid;grid-template-columns:150px 1fr;border-bottom:1px solid #e0e5de}
+.support-table>div:last-child{border-bottom:0}
+.support-table strong,.support-table span{padding:13px 15px;font-size:11px;line-height:1.6}
+.support-table strong{background:#f3f6f1}
+.contact-link{display:inline-block;margin-top:18px;text-decoration:none}
+.footer-inner{gap:32px}
+.footer-links{display:flex;flex-wrap:wrap;gap:14px}
+.footer-links-title{width:100%;color:#fff;font-size:11px;font-weight:800;letter-spacing:.08em}
+.footer-links a{color:#bdd0c3;font-size:10px;text-decoration:none}
+.footer-links a:hover{text-decoration:underline}
+.status-panel{max-width:720px;margin:30px auto;text-align:center}
+.status-panel h1{font-size:30px}
+@media(max-width:900px){.nav-links a{padding:12px;text-align:left}.nav-links a.active:after{display:none}.footer-inner{align-items:flex-start}.footer-links{order:3}}
+@media(max-width:600px){.legal-page{padding:55px 0 80px}.legal-content section{padding:21px 19px}.support-table>div{grid-template-columns:1fr}.support-table strong{padding-bottom:5px}.support-table span{padding-top:5px}.document-report dl{grid-template-columns:1fr}.footer-links{flex-direction:column}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

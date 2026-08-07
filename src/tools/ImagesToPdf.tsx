@@ -51,7 +51,7 @@ export default function ImagesToPdf() {
         page.drawImage(image, { x: (pageWidth - width) / 2, y: (pageHeight - height) / 2, width, height })
       }
       const bytes = await pdf.save()
-      downloadBlob(new Blob([new Uint8Array(bytes)], { type: 'application/pdf' }), `파일뚝딱_${files.length}장.pdf`)
+      downloadBlob(new Blob([new Uint8Array(bytes)], { type: 'application/pdf' }), `파일정비소_${files.length}장.pdf`)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'PDF를 만드는 중 문제가 발생했습니다.')
     } finally {
