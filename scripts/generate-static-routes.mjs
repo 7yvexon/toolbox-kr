@@ -54,6 +54,7 @@ for (const [route, [title, description]] of Object.entries(routes)) {
     .replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtml(description)}" />`)
     .replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeHtml(title)}" />`)
     .replace(/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtml(description)}" />`)
+  if (route !== '/') html = html.replace(/\s*<script id="website-structured-data"[\s\S]*?<\/script>/, '')
   if (canonical) html = html.replace('</head>', `    <link rel="canonical" href="${canonical}" />\n    <meta property="og:url" content="${canonical}" />\n  </head>`)
   if (route === '/') await writeFile(resolve(dist, 'index.html'), html)
   else {
