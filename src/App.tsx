@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type MouseEvent, type ReactNode } from 'react'
 import ErrorBoundary from './components/ErrorBoundary'
+import { GuideArticle, GuidesIndex } from './components/GuidePages'
+import { guideByPath, guides, type GuidePath } from './content/guides'
 
 const ImageCompressor = lazy(() => import('./tools/ImageCompressor'))
 const HeicConverter = lazy(() => import('./tools/HeicConverter'))
@@ -12,7 +14,7 @@ const PdfPageNumbers = lazy(() => import('./tools/PdfPageNumbers'))
 const ImageConverter = lazy(() => import('./tools/ImageConverter'))
 const HwpToPdf = lazy(() => import('./tools/HwpToPdf'))
 
-export type Route = '/' | '/image-compress' | '/image-convert' | '/heic-to-jpg' | '/images-to-pdf' | '/pdf-merge' | '/pdf-split' | '/pdf-rotate' | '/pdf-to-jpg' | '/pdf-page-numbers' | '/hwp-to-pdf' | '/about' | '/support' | '/privacy' | '/terms' | '/legal' | '/contact'
+export type Route = '/' | '/image-compress' | '/image-convert' | '/heic-to-jpg' | '/images-to-pdf' | '/pdf-merge' | '/pdf-split' | '/pdf-rotate' | '/pdf-to-jpg' | '/pdf-page-numbers' | '/hwp-to-pdf' | '/guides' | GuidePath | '/about' | '/support' | '/privacy' | '/terms' | '/legal' | '/contact'
 
 export const tools = [
   { path: '/hwp-to-pdf' as Route, icon: '한', tone: 'lime', category: '한글 문서', title: 'HWP·HWPX → 호환 PDF', description: '내용 확인용 이미지 PDF로 변환', meta: '정밀 변환 아님' },
@@ -40,12 +42,14 @@ export const routeInfo: Record<Route, { title: string; description: string }> = 
   '/pdf-to-jpg': { title: 'PDF JPG 변환 - 파일정비소', description: 'PDF의 각 페이지를 고화질 JPG 이미지로 변환하세요.' },
   '/pdf-page-numbers': { title: 'PDF 페이지 번호 - 파일정비소', description: 'PDF 문서 위쪽 또는 아래쪽에 페이지 번호를 추가하세요.' },
   '/hwp-to-pdf': { title: 'HWP HWPX 호환 PDF 변환 - 파일정비소', description: 'HWP와 HWPX의 일반 본문과 표를 서버 업로드 없이 이미지형 호환 PDF로 만드세요.' },
+  '/guides': { title: '파일 작업 가이드 - 파일정비소', description: '이미지와 PDF를 안전하게 변환하고 제출하기 위한 형식 선택, 품질 확인과 실무 체크리스트를 살펴보세요.' },
   '/support': { title: '지원 범위와 제한 - 파일정비소', description: '파일정비소의 지원 형식, 변환 방식, 제한 사항과 HWP 호환 범위를 확인하세요.' },
   '/privacy': { title: '개인정보처리방침 - 파일정비소', description: '파일정비소의 로컬 파일 처리 방식과 개인정보 보호 원칙을 확인하세요.' },
   '/terms': { title: '이용약관 - 파일정비소', description: '파일정비소 도구 사용 조건과 사용자 책임, 서비스 제한을 확인하세요.' },
   '/legal': { title: '법적 고지 - 파일정비소', description: '파일정비소에 적용되는 개인정보 보호법, 저작권법 및 향후 유료화 시 준비할 법적 사항을 확인하세요.' },
   '/about': { title: '서비스 소개 - 파일정비소', description: '파일정비소가 제공하는 브라우저 기반 이미지·PDF·HWPX 도구와 운영 원칙을 소개합니다.' },
   '/contact': { title: '문의하기 - 파일정비소', description: '파일정비소 기능 오류, 문서 호환성 및 보안 문제 문의 방법을 확인하세요.' },
+  ...Object.fromEntries(guides.map((guide) => [guide.path, { title: `${guide.title} - 파일정비소`, description: guide.description }])) as Record<GuidePath, { title: string; description: string }>,
 }
 
 const normalisePath = (path: string) => path !== '/' ? path.replace(/\/+$/, '') : '/'
@@ -67,15 +71,25 @@ function upsertMeta(selector: string, attribute: 'name' | 'property', key: strin
 function updateSeo(route: Route) {
   const info = routeInfo[route]
   const canonical = new URL(route, window.location.origin).href
+  const guide = route.startsWith('/guides/') ? guideByPath[route as GuidePath] : undefined
   document.title = info.title
   upsertMeta('meta[name="description"]', 'name', 'description', info.description)
   upsertMeta('meta[property="og:title"]', 'property', 'og:title', info.title)
   upsertMeta('meta[property="og:description"]', 'property', 'og:description', info.description)
-  upsertMeta('meta[property="og:type"]', 'property', 'og:type', 'website')
+  upsertMeta('meta[property="og:type"]', 'property', 'og:type', guide ? 'article' : 'website')
   upsertMeta('meta[property="og:url"]', 'property', 'og:url', canonical)
   let canonicalLink = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
   if (!canonicalLink) { canonicalLink = document.createElement('link'); canonicalLink.rel = 'canonical'; document.head.appendChild(canonicalLink) }
   canonicalLink.href = canonical
+  let structuredData = document.head.querySelector<HTMLScriptElement>('#route-structured-data')
+  if (!structuredData) { structuredData = document.createElement('script'); structuredData.id = 'route-structured-data'; structuredData.type = 'application/ld+json'; document.head.appendChild(structuredData) }
+  structuredData.textContent = JSON.stringify(guide ? {
+    '@context': 'https://schema.org', '@graph': [
+      { '@type': 'Article', headline: guide.title, description: guide.description, datePublished: '2026-08-08', dateModified: '2026-08-08', inLanguage: 'ko-KR', mainEntityOfPage: canonical, author: { '@type': 'Organization', name: '파일정비소', url: window.location.origin } },
+      { '@type': 'FAQPage', mainEntity: guide.faq.map((item) => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } })) },
+      { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: '홈', item: window.location.origin }, { '@type': 'ListItem', position: 2, name: '가이드', item: `${window.location.origin}/guides` }, { '@type': 'ListItem', position: 3, name: guide.title, item: canonical }] },
+    ],
+  } : { '@context': 'https://schema.org', '@type': route === '/guides' ? 'CollectionPage' : 'WebPage', name: info.title, description: info.description, url: canonical, inLanguage: 'ko-KR' })
 }
 
 export default function App() {
@@ -111,8 +125,9 @@ export default function App() {
       <header className="site-header">
         <div className="nav-shell">
           <a className="brand" href="/" onClick={link('/')} aria-label="파일정비소 홈"><span className="brand-mark"><i></i><i></i></span><span>파일<strong>정비소</strong></span></a>
-          <nav className={menuOpen ? 'nav-links is-open' : 'nav-links'} aria-label="주요 도구">
+          <nav className={menuOpen ? 'nav-links is-open' : 'nav-links'} aria-label="주요 메뉴">
             {navTools.map((tool) => <a className={route === tool.path ? 'active' : ''} href={tool.path} key={tool.path} onClick={link(tool.path)}>{tool.title}</a>)}
+            <a className={route === '/guides' || route.startsWith('/guides/') ? 'active' : ''} href="/guides" onClick={link('/guides')}>가이드</a>
           </nav>
           <div className="header-safe"><span></span>내 기기에서 안전 처리</div>
           <button className="menu-button" type="button" onClick={() => setMenuOpen((value) => !value)} aria-label="주요 메뉴" aria-expanded={menuOpen}>☰</button>
@@ -134,6 +149,8 @@ export default function App() {
             {route === '/hwp-to-pdf' && <HwpToPdf />}
           </Suspense>
           {route === '/about' && <AboutPage />}
+          {route === '/guides' && <GuidesIndex />}
+          {route.startsWith('/guides/') && <GuideArticle path={route as GuidePath} />}
           {route === '/support' && <SupportPage />}
           {route === '/privacy' && <PrivacyPage />}
           {route === '/terms' && <TermsPage />}
@@ -141,7 +158,7 @@ export default function App() {
           {route === '/contact' && <ContactPage />}
         </div>
       </ErrorBoundary>
-      <footer className="site-footer"><div className="footer-inner"><div><span className="footer-logo">파일정비소</span><p>복잡한 파일 작업을 가볍고 안전하게.</p></div><nav className="footer-links" aria-label="정책과 고객 지원"><span className="footer-links-title">서비스</span><a href="/about" onClick={link('/about')}>서비스 소개</a><a href="/support" onClick={link('/support')}>지원 범위</a><a href="/contact" onClick={link('/contact')}>문의하기</a></nav><nav className="footer-links" aria-label="법적 정책"><span className="footer-links-title">정책</span><a href="/privacy" onClick={link('/privacy')}>개인정보처리방침</a><a href="/terms" onClick={link('/terms')}>이용약관</a><a href="/legal" onClick={link('/legal')}>법적 고지</a></nav><div className="footer-note"><span>원본 업로드 없음</span><span>회원가입 없음</span></div></div></footer>
+      <footer className="site-footer"><div className="footer-inner"><div><span className="footer-logo">파일정비소</span><p>복잡한 파일 작업을 가볍고 안전하게.</p></div><nav className="footer-links" aria-label="서비스와 고객 지원"><span className="footer-links-title">서비스</span><a href="/guides" onClick={link('/guides')}>파일 작업 가이드</a><a href="/about" onClick={link('/about')}>서비스 소개</a><a href="/support" onClick={link('/support')}>지원 범위</a><a href="/contact" onClick={link('/contact')}>문의하기</a></nav><nav className="footer-links" aria-label="법적 정책"><span className="footer-links-title">정책</span><a href="/privacy" onClick={link('/privacy')}>개인정보처리방침</a><a href="/terms" onClick={link('/terms')}>이용약관</a><a href="/legal" onClick={link('/legal')}>법적 고지</a></nav><div className="footer-note"><span>원본 업로드 없음</span><span>회원가입 없음</span></div></div></footer>
     </div>
   )
 }
@@ -151,6 +168,7 @@ function Home({ navigate }: { navigate: (path: Route) => void }) {
     <main className="home-page">
       <section className="hero"><div className="page-shell home-hero-inner"><div className="hero-copy"><div className="hero-kicker">설치 없이 바로 쓰는 파일 도구</div><h1>복잡한 파일 작업을<br /><em>더 쉽고 빠르게</em></h1><p>이미지 변환부터 PDF 편집까지 한곳에서 해결하세요.<br />파일은 서버가 아닌 내 브라우저에서 처리됩니다.</p><div className="hero-actions"><button className="button primary" type="button" onClick={() => navigate('/image-compress')}>무료로 시작하기</button><button className="button secondary" type="button" onClick={() => document.getElementById('all-tools')?.scrollIntoView({ behavior: 'smooth' })}>모든 도구 보기</button></div><div className="hero-proof"><span>회원가입 없음</span><span>횟수 제한 없음</span><span>원본 파일 저장 없음</span></div></div><div className="hero-art" aria-hidden="true"><div className="product-window"><div className="product-window-bar"><span></span><span></span><span></span><small>file-repair.local</small></div><div className="product-window-body"><div className="product-side"><b>파일정비소</b><i></i><i></i><i></i><i></i></div><div className="product-main"><span className="product-label">빠른 도구</span><strong>무엇을 도와드릴까요?</strong><div className="product-tool-grid"><span><b>↘</b>이미지 압축</span><span><b>+</b>PDF 합치기</span><span><b>S</b>PDF 나누기</span><span><b>H</b>HEIC 변환</span></div></div></div></div><div className="product-phone"><span></span><div><b>PDF</b><small>변환 완료</small><strong>2.4 MB</strong></div></div><div className="product-badge"><strong>100%</strong><span>브라우저 처리</span></div></div></div></section>
       <section className="tools-section" id="all-tools"><div className="page-shell"><div className="section-heading"><div><span className="eyebrow">FILE TOOLS</span><h2>필요한 작업을 선택하세요</h2><p>파일 종류와 작업 목적에 맞는 도구를 바로 찾을 수 있습니다.</p></div><span className="tools-count"><strong>{tools.length}</strong><span>개의 무료 도구</span></span></div><div className="tool-card-grid">{tools.map((tool, index) => <a className={`tool-card ${tool.tone}`} key={tool.path} href={tool.path} onClick={(event) => { event.preventDefault(); navigate(tool.path) }}><span className="tool-card-head"><span className="tool-icon">{tool.icon}</span><span className="tool-category">{tool.category}</span><span className="tool-index">{String(index + 1).padStart(2, '0')}</span></span><span className="tool-copy"><strong>{tool.title}</strong><span>{tool.description}</span></span><span className="tool-card-footer"><span className="tool-meta">{tool.meta}</span><span className="tool-arrow">→</span></span></a>)}</div><div className="hwp-roadmap"><span>HWP / HWPX</span><div><strong>호환 PDF 변환은 지원 범위를 먼저 알려드립니다.</strong><p>일반 본문과 표는 내용 확인용 이미지 PDF로 변환합니다. 원본과 같은 결과가 필요한 경우 한컴오피스의 PDF 저장 기능을 권장합니다.</p><button className="button secondary small" type="button" onClick={() => navigate('/hwp-to-pdf')}>지원 범위 확인하기</button></div></div></div></section>
+      <section className="home-guides"><div className="page-shell"><div className="home-guides-heading"><div><span className="eyebrow">PRACTICAL GUIDES</span><h2>변환보다 중요한<br />결과 확인 방법</h2></div><p>파일 형식 선택부터 제출 전 검수까지,<br />실수하기 쉬운 부분을 먼저 읽어보세요.</p><a href="/guides" onClick={(event) => { event.preventDefault(); navigate('/guides') }}>전체 가이드 보기 <b>→</b></a></div><div className="home-guide-grid">{guides.slice(0, 3).map((guide) => <a href={guide.path} key={guide.path} onClick={(event) => { event.preventDefault(); navigate(guide.path) }}><span>{guide.category} · {guide.readTime}</span><strong>{guide.title}</strong><p>{guide.description}</p><b>읽어보기 →</b></a>)}</div></div></section>
       <section className="promise-section"><div className="page-shell promise-inner"><div className="promise-title"><span className="privacy-large-icon">✓</span><div><span className="eyebrow">PRIVATE BY DESIGN</span><h2>파일은 내 기기에<br />그대로 남습니다.</h2></div></div><p>현재 제공하는 모든 변환은 사용 중인 브라우저 안에서 끝납니다.<br />선택한 파일의 내용과 변환 결과를 운영 서버에 저장하지 않습니다.</p><div className="promise-stats"><div><strong>0</strong><span>파일 서버 전송</span></div><div><strong>0</strong><span>원본 파일 보관</span></div><div><strong>10</strong><span>무료 파일 도구</span></div></div></div></section>
     </main>
   )

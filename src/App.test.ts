@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { routeInfo, tools } from './App'
+import { guides } from './content/guides'
+import { toolEducation } from './content/toolEducation'
 
 describe('tool catalog', () => {
   it('publishes ten distinct browser tools on the home screen', () => {
@@ -23,5 +25,16 @@ describe('tool catalog', () => {
 
   it('uses the 파일정비소 brand on every route', () => {
     expect(Object.values(routeInfo).every((route) => route.title.includes('파일정비소'))).toBe(true)
+  })
+
+  it('publishes ten distinct practical guides with useful FAQs', () => {
+    expect(guides).toHaveLength(10)
+    expect(new Set(guides.map((guide) => guide.path)).size).toBe(guides.length)
+    expect(guides.every((guide) => guide.sections.length >= 3 && guide.faq.length >= 3)).toBe(true)
+  })
+
+  it('connects every tool to education and a guide', () => {
+    expect(tools.every((tool) => toolEducation[tool.path]?.guidePath)).toBe(true)
+    expect(guides.every((guide) => routeInfo[guide.path]?.description === guide.description)).toBe(true)
   })
 })

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import FileDrop from '../components/FileDrop'
 import { downloadBlob, formatBytes, renderImage, replaceExtension } from '../lib/files'
 import { validateStandardImage } from '../lib/fileValidation'
+import { ToolEducation } from '../components/GuidePages'
 
 export default function ImageCompressor() {
   const [file, setFile] = useState<File | null>(null)
@@ -135,6 +136,7 @@ export function ToolShell({ eyebrow, title, description, children }: { eyebrow: 
         <div><span>02</span><strong>옵션을 정하세요</strong><p>원하는 크기와 품질을 선택합니다.</p></div>
         <div><span>03</span><strong>바로 저장하세요</strong><p>처리가 끝난 파일을 기기에 저장합니다.</p></div>
       </section>
+      <ToolEducation path={window.location.pathname.replace(/\/+$/, '') || '/'} />
     </main>
   )
 }
