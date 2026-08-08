@@ -106,9 +106,11 @@ Vercel, Netlify 또는 Cloudflare Pages에서 저장소를 연결한 뒤 정적 
 배포 환경 변수:
 
 - `VITE_SITE_URL`: 실제 공개 주소. 설정하면 canonical URL, `sitemap.xml`, `robots.txt`가 배포 주소에 맞게 생성됩니다.
-- `VITE_CONTACT_EMAIL`: 공식 문의 이메일. 설정하지 않으면 문의 페이지가 미설정 상태를 명확히 표시합니다.
+- `VITE_CONTACT_EMAIL`: 공식 문의 이메일. 프로덕션 배포에서는 반드시 설정해야 합니다.
 
 `vercel.json`은 SPA 라우팅과 프로덕션 보안 헤더를 함께 관리합니다.
+
+최초 공개와 배포 후 확인 절차는 [배포 체크리스트](docs/DEPLOYMENT_CHECKLIST.md)를 따르세요.
 
 ## HWP 변환
 

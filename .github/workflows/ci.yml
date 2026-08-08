@@ -35,7 +35,10 @@ jobs:
         run: npm run test
 
       - name: Build production bundle
-        run: npm run build
+        run: npm run build:production
+        env:
+          VITE_SITE_URL: https://ci.example.test
+          VITE_CONTACT_EMAIL: 7yvexon@gmail.com
 
       - name: Audit high-severity vulnerabilities
         run: npm audit --audit-level=high

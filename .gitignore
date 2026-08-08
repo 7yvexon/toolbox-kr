@@ -12,5 +12,9 @@ vite.config.d.ts
 
 .dev-server*.log
 
+# Local design review artifacts
+design-candidates/
+home-*.png
+
 .DS_Store
 Thumbs.db

@@ -5,6 +5,9 @@ const errors = []
 try {
   const siteUrl = new URL(env.VITE_SITE_URL || '')
   if (siteUrl.protocol !== 'https:') errors.push('VITE_SITE_URL은 https:// 공개 주소여야 합니다.')
+  if (['example.com', 'www.example.com'].includes(siteUrl.hostname)) {
+    errors.push('VITE_SITE_URL의 예시 주소를 실제 공개 주소로 바꿔 주세요.')
+  }
 } catch {
   errors.push('VITE_SITE_URL에 실제 공개 주소를 설정해 주세요.')
 }
