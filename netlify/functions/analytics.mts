@@ -1,5 +1,4 @@
 import type { Config, Context } from '@netlify/functions'
-import { getStore } from '@netlify/blobs'
 import {
   allowedCountBuckets,
   allowedFormats,
@@ -10,10 +9,10 @@ import {
   dailyVisitorId,
   deviceCategory,
   koreanDate,
+  maskIp,
   optionalAllowed,
   safeRoute,
   storeEvent,
-  visitorAlertKey,
   type StoredAnalyticsEvent,
 } from '../lib/analytics.mts'
 
@@ -32,27 +31,24 @@ const isDiscordWebhook = (value: string) => {
   }
 }
 
-const notifyNewVisitor = async (date: string, event: StoredAnalyticsEvent) => {
+const notifyVisitor = async (event: StoredAnalyticsEvent, maskedIp: string) => {
   const webhook = process.env.DISCORD_WEBHOOK_URL?.trim() ?? ''
   if (!isDiscordWebhook(webhook)) return
-
-  const store = getStore({ name: 'privacy-safe-analytics', consistency: 'strong' })
-  const markerKey = visitorAlertKey(date, event.visitorId)
-  if (await store.get(markerKey, { type: 'text', consistency: 'strong' })) return
 
   const body = {
     username: '파일정비소 방문 알림',
     allowed_mentions: { parse: [] },
     embeds: [{
-      title: '새 익명 방문자 감지',
+      title: '익명 방문자 접속 감지',
       color: 0x3159ed,
-      description: '파일정비소에 새로운 방문자가 접속했습니다. 같은 방문자는 하루에 한 번만 알림을 보냅니다.',
+      description: '파일정비소에 방문자가 접속했습니다. 같은 방문자의 재방문과 페이지 이동도 알림을 보냅니다.',
       fields: [
+        { name: 'IP (부분 마스킹)', value: `||${maskedIp}||`, inline: true },
         { name: '접속 페이지', value: event.route, inline: true },
         { name: '대략적인 지역', value: event.region, inline: true },
         { name: '기기', value: event.device, inline: true },
       ],
-      footer: { text: '원본 IP·파일명·파일 내용은 전송하지 않음' },
+      footer: { text: 'IP 일부만 표시하며 원본 파일·파일명·파일 내용은 전송하지 않음' },
       timestamp: event.occurredAt,
     }],
   }
@@ -63,7 +59,6 @@ const notifyNewVisitor = async (date: string, event: StoredAnalyticsEvent) => {
     body: JSON.stringify(body),
   })
   if (!response.ok) throw new Error(`Discord new visitor webhook failed with ${response.status}.`)
-  await store.set(markerKey, event.occurredAt)
 }
 
 export default async (request: Request, context: Context) => {
@@ -119,9 +114,9 @@ export default async (request: Request, context: Context) => {
     await storeEvent(date, event)
     if (kind === 'page_view') {
       try {
-        await notifyNewVisitor(date, event)
+        await notifyVisitor(event, maskIp(context.ip))
       } catch (error) {
-        console.error('Failed to send new visitor alert', error)
+        console.error('Failed to send visitor alert', error)
       }
     }
     return respond(204)

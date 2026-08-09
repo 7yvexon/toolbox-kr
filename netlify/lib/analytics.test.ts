@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dailyVisitorId, deviceCategory, koreanDate, previousKoreanDate, safeRoute, visitorAlertKey } from './analytics.mts'
+import { dailyVisitorId, deviceCategory, koreanDate, maskIp, previousKoreanDate, safeRoute } from './analytics.mts'
 
 describe('server analytics privacy helpers', () => {
   it('creates a stable ID only for the same date', () => {
@@ -16,9 +16,9 @@ describe('server analytics privacy helpers', () => {
     expect(previousKoreanDate(beforeMidnightUtc)).toBe('2026-08-08')
   })
 
-  it('scopes new visitor alert markers to one visitor and one day', () => {
-    expect(visitorAlertKey('2026-08-09', 'visitor-a')).toBe('alerts/new-visitor/2026-08-09/visitor-a')
-    expect(visitorAlertKey('2026-08-10', 'visitor-a')).not.toBe(visitorAlertKey('2026-08-09', 'visitor-a'))
+  it('masks IPv4 and IPv6 addresses before alert delivery', () => {
+    expect(maskIp('203.0.113.10')).toBe('203.0.***.***')
+    expect(maskIp('2001:db8:abcd:1234:5678:90ab:cdef:1')).toBe('2001:db8:****:****:****:****:****:****')
   })
 
   it('allows known routes and reduces device information', () => {

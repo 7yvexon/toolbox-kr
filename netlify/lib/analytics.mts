@@ -53,7 +53,15 @@ export const dateDaysAgo = (days: number, date = new Date()) => {
 export const dailyVisitorId = (ip: string, secret: string, date: string) =>
   createHmac('sha256', secret).update(`${date}:${ip}`).digest('hex').slice(0, 24)
 
-export const visitorAlertKey = (date: string, visitorId: string) => `alerts/new-visitor/${date}/${visitorId}`
+export const maskIp = (ip: string) => {
+  if (ip.includes(':')) {
+    const groups = ip.split(':').filter(Boolean).slice(0, 2)
+    return `${groups.join(':') || '****'}:****:****:****:****:****:****`
+  }
+  const octets = ip.split('.')
+  if (octets.length === 4) return `${octets[0]}.${octets[1]}.***.***`
+  return '***.***.***.***'
+}
 
 export const deviceCategory = (userAgent: string): StoredAnalyticsEvent['device'] => {
   if (/ipad|tablet|kindle|silk/i.test(userAgent)) return '태블릿'
