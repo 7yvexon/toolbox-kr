@@ -1,4 +1,5 @@
 import type { Config, Context } from '@netlify/functions'
+import { getStore } from '@netlify/blobs'
 import {
   allowedCountBuckets,
   allowedFormats,
@@ -12,6 +13,7 @@ import {
   optionalAllowed,
   safeRoute,
   storeEvent,
+  visitorAlertKey,
   type StoredAnalyticsEvent,
 } from '../lib/analytics.mts'
 
@@ -20,6 +22,49 @@ const respond = (status: number, body = '') =>
   new Response(status === 204 ? null : body, { status, headers: noStoreHeaders })
 
 const isBot = (userAgent: string) => /bot|crawler|spider|slurp|facebookexternalhit|preview|headless|lighthouse|curl|wget/i.test(userAgent)
+
+const isDiscordWebhook = (value: string) => {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && ['discord.com', 'discordapp.com'].includes(url.hostname) && url.pathname.startsWith('/api/webhooks/')
+  } catch {
+    return false
+  }
+}
+
+const notifyNewVisitor = async (date: string, event: StoredAnalyticsEvent) => {
+  const webhook = process.env.DISCORD_WEBHOOK_URL?.trim() ?? ''
+  if (!isDiscordWebhook(webhook)) return
+
+  const store = getStore({ name: 'privacy-safe-analytics', consistency: 'strong' })
+  const markerKey = visitorAlertKey(date, event.visitorId)
+  if (await store.get(markerKey, { type: 'text', consistency: 'strong' })) return
+
+  const body = {
+    username: '파일정비소 방문 알림',
+    allowed_mentions: { parse: [] },
+    embeds: [{
+      title: '새 익명 방문자 감지',
+      color: 0x3159ed,
+      description: '파일정비소에 새로운 방문자가 접속했습니다. 같은 방문자는 하루에 한 번만 알림을 보냅니다.',
+      fields: [
+        { name: '접속 페이지', value: event.route, inline: true },
+        { name: '대략적인 지역', value: event.region, inline: true },
+        { name: '기기', value: event.device, inline: true },
+      ],
+      footer: { text: '원본 IP·파일명·파일 내용은 전송하지 않음' },
+      timestamp: event.occurredAt,
+    }],
+  }
+
+  const response = await fetch(webhook, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) throw new Error(`Discord new visitor webhook failed with ${response.status}.`)
+  await store.set(markerKey, event.occurredAt)
+}
 
 export default async (request: Request, context: Context) => {
   if (request.method !== 'POST') return respond(405)
@@ -72,6 +117,13 @@ export default async (request: Request, context: Context) => {
 
   try {
     await storeEvent(date, event)
+    if (kind === 'page_view') {
+      try {
+        await notifyNewVisitor(date, event)
+      } catch (error) {
+        console.error('Failed to send new visitor alert', error)
+      }
+    }
     return respond(204)
   } catch (error) {
     console.error('Failed to store analytics event', error)

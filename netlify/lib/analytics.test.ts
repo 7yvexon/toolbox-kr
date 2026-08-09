@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dailyVisitorId, deviceCategory, koreanDate, previousKoreanDate, safeRoute } from './analytics.mts'
+import { dailyVisitorId, deviceCategory, koreanDate, previousKoreanDate, safeRoute, visitorAlertKey } from './analytics.mts'
 
 describe('server analytics privacy helpers', () => {
   it('creates a stable ID only for the same date', () => {
@@ -16,6 +16,11 @@ describe('server analytics privacy helpers', () => {
     expect(previousKoreanDate(beforeMidnightUtc)).toBe('2026-08-08')
   })
 
+  it('scopes new visitor alert markers to one visitor and one day', () => {
+    expect(visitorAlertKey('2026-08-09', 'visitor-a')).toBe('alerts/new-visitor/2026-08-09/visitor-a')
+    expect(visitorAlertKey('2026-08-10', 'visitor-a')).not.toBe(visitorAlertKey('2026-08-09', 'visitor-a'))
+  })
+
   it('allows known routes and reduces device information', () => {
     expect(safeRoute('/pdf-merge/')).toBe('/pdf-merge')
     expect(safeRoute('/admin/private')).toBe('/')
@@ -23,4 +28,3 @@ describe('server analytics privacy helpers', () => {
     expect(deviceCategory('Mozilla/5.0 (Windows NT 10.0; Win64; x64)')).toBe('PC')
   })
 })
-

@@ -53,6 +53,8 @@ export const dateDaysAgo = (days: number, date = new Date()) => {
 export const dailyVisitorId = (ip: string, secret: string, date: string) =>
   createHmac('sha256', secret).update(`${date}:${ip}`).digest('hex').slice(0, 24)
 
+export const visitorAlertKey = (date: string, visitorId: string) => `alerts/new-visitor/${date}/${visitorId}`
+
 export const deviceCategory = (userAgent: string): StoredAnalyticsEvent['device'] => {
   if (/ipad|tablet|kindle|silk/i.test(userAgent)) return '태블릿'
   if (/mobile|iphone|ipod|android/i.test(userAgent)) return '모바일'
@@ -88,8 +90,9 @@ export const readEvents = async (date: string) => {
 
 export const deleteEvents = async (date: string) => {
   const store = getStore({ name: ANALYTICS_STORE, consistency: 'strong' })
-  for await (const page of store.list({ prefix: `events/${date}/`, paginate: true })) {
-    await Promise.all(page.blobs.map((blob) => store.delete(blob.key)))
+  for (const prefix of [`events/${date}/`, `alerts/new-visitor/${date}/`]) {
+    for await (const page of store.list({ prefix, paginate: true })) {
+      await Promise.all(page.blobs.map((blob) => store.delete(blob.key)))
+    }
   }
 }
-
