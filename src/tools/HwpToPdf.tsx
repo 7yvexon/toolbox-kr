@@ -14,6 +14,7 @@ import {
   type HwpxFallbackBlock,
 } from '../lib/hwp'
 import { validateImageDimensions } from '../lib/fileValidation'
+import { fileSizeBucket, pageCountBucket, trackToolEvent } from '../lib/analytics'
 import { ToolShell } from './ImageCompressor'
 
 type MeasureTextHost = typeof globalThis & {
@@ -233,6 +234,13 @@ export default function HwpToPdf() {
 
   const convert = async () => {
     if (!file || !acknowledged) return
+    const details = {
+      sizeBucket: fileSizeBucket(file.size),
+      pageBucket: pageCount ? pageCountBucket(pageCount) : undefined,
+      inputFormat: isHwpx(file) ? 'HWPX' : 'HWP',
+      outputFormat: 'PDF',
+    }
+    trackToolEvent('hwp-to-pdf', 'start', details)
     cancelRequested.current = false
     setProcessing(true)
     setProgress(0)
@@ -244,6 +252,7 @@ export default function HwpToPdf() {
         const output = await createFallbackPdf(opened.report.blocks, scale, () => cancelRequested.current, setProgress)
         setPageCount(output.pages)
         downloadBlob(new Blob([new Uint8Array(output.bytes)], { type: 'application/pdf' }), hwpOutputName(file.name))
+        trackToolEvent('hwp-to-pdf', 'success', { ...details, pageBucket: pageCountBucket(output.pages) })
         return
       }
 
@@ -269,7 +278,9 @@ export default function HwpToPdf() {
       }
       const output = await pdf.save({ useObjectStreams: true })
       downloadBlob(new Blob([new Uint8Array(output)], { type: 'application/pdf' }), hwpOutputName(file.name))
+      trackToolEvent('hwp-to-pdf', 'success', details)
     } catch (reason) {
+      trackToolEvent('hwp-to-pdf', 'error', details)
       if (reason instanceof ConversionCancelled) setError('변환을 취소했습니다. 원본 파일은 변경되지 않았습니다.')
       else setError(hwpErrorMessage(reason))
     } finally {

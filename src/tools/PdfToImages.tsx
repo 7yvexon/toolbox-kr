@@ -8,6 +8,7 @@ import { downloadBlob } from '../lib/files'
 import { validateImageDimensions } from '../lib/fileValidation'
 import { errorMessage, PDF_LIMITS, readPdfBytes } from '../lib/pdf'
 import { ToolShell } from './ImageCompressor'
+import { fileSizeBucket, pageCountBucket, trackToolEvent } from '../lib/analytics'
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
@@ -42,6 +43,8 @@ export default function PdfToImages() {
 
   const convert = async () => {
     if (!file) return
+    const details = { sizeBucket: fileSizeBucket(file.size), pageBucket: pageCountBucket(pageCount), inputFormat: 'PDF', outputFormat: 'JPG' }
+    trackToolEvent('pdf-to-jpg', 'start', details)
     setProcessing(true); setError('')
     let loadingTask: ReturnType<typeof getDocument> | null = null
     let pdfDocument: Awaited<ReturnType<typeof getDocument>['promise']> | null = null
@@ -74,7 +77,9 @@ export default function PdfToImages() {
         results.forEach((blob, index) => zip.file(`${base}_${String(index + 1).padStart(digits, '0')}페이지.jpg`, blob))
         downloadBlob(await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } }), `${base}_JPG_${results.length}장.zip`)
       }
+      trackToolEvent('pdf-to-jpg', 'success', details)
     } catch (reason) {
+      trackToolEvent('pdf-to-jpg', 'error', details)
       setError(errorMessage(reason, 'PDF를 JPG로 변환하는 중 문제가 발생했습니다.'))
     } finally {
       await loadingTask?.destroy(); setProcessing(false)

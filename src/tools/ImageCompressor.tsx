@@ -3,6 +3,7 @@ import FileDrop from '../components/FileDrop'
 import { downloadBlob, formatBytes, renderImage, replaceExtension } from '../lib/files'
 import { validateStandardImage } from '../lib/fileValidation'
 import { ToolEducation } from '../components/GuidePages'
+import { fileSizeBucket, trackToolEvent } from '../lib/analytics'
 
 export default function ImageCompressor() {
   const [file, setFile] = useState<File | null>(null)
@@ -40,6 +41,8 @@ export default function ImageCompressor() {
 
   const compress = async () => {
     if (!file) return
+    const details = { sizeBucket: fileSizeBucket(file.size), inputFormat: 'IMAGE', outputFormat: outputType === 'image/png' ? 'PNG' : outputType === 'image/webp' ? 'WEBP' : 'JPG' }
+    trackToolEvent('image-compress', 'start', details)
     setProcessing(true)
     setError('')
     try {
@@ -49,7 +52,9 @@ export default function ImageCompressor() {
         quality: quality / 100,
       })
       setResult(rendered.blob)
+      trackToolEvent('image-compress', 'success', details)
     } catch (reason) {
+      trackToolEvent('image-compress', 'error', details)
       setError(reason instanceof Error ? reason.message : '압축 중 문제가 발생했습니다.')
     } finally {
       setProcessing(false)

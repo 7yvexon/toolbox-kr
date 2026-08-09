@@ -4,6 +4,7 @@ import { formatBytes } from '../lib/files'
 import { downloadPdf, errorMessage, validatePdfBatch } from '../lib/pdf'
 import { mergePdfFiles } from '../lib/pdfOperations'
 import { ToolShell } from './ImageCompressor'
+import { fileSizeBucket, itemCountBucket, totalFileSize, trackToolEvent } from '../lib/analytics'
 
 export default function PdfMerge() {
   const [files, setFiles] = useState<File[]>([])
@@ -32,12 +33,16 @@ export default function PdfMerge() {
 
   const merge = async () => {
     if (files.length < 2) return
+    const details = { sizeBucket: fileSizeBucket(totalFileSize(files)), countBucket: itemCountBucket(files.length), inputFormat: 'PDF', outputFormat: 'PDF' }
+    trackToolEvent('pdf-merge', 'start', details)
     setProcessing(true)
     setError('')
     try {
       const output = await mergePdfFiles(files)
       await downloadPdf(output, `파일정비소_합친문서_${files.length}개.pdf`)
+      trackToolEvent('pdf-merge', 'success', details)
     } catch (reason) {
+      trackToolEvent('pdf-merge', 'error', details)
       setError(errorMessage(reason, 'PDF를 합치는 중 문제가 발생했습니다.'))
     } finally {
       setProcessing(false)

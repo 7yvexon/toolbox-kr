@@ -4,6 +4,7 @@ import FileDrop from '../components/FileDrop'
 import { downloadBlob, formatBytes, renderImage } from '../lib/files'
 import { validateImageBatch } from '../lib/fileValidation'
 import { ToolShell } from './ImageCompressor'
+import { fileSizeBucket, itemCountBucket, pageCountBucket, totalFileSize, trackToolEvent } from '../lib/analytics'
 
 export default function ImagesToPdf() {
   const [files, setFiles] = useState<File[]>([])
@@ -35,6 +36,8 @@ export default function ImagesToPdf() {
 
   const createPdf = async () => {
     if (!files.length) return
+    const details = { sizeBucket: fileSizeBucket(totalFileSize(files)), countBucket: itemCountBucket(files.length), pageBucket: pageCountBucket(files.length), inputFormat: 'IMAGE', outputFormat: 'PDF' }
+    trackToolEvent('images-to-pdf', 'start', details)
     setProcessing(true)
     setError('')
     try {
@@ -52,7 +55,9 @@ export default function ImagesToPdf() {
       }
       const bytes = await pdf.save()
       downloadBlob(new Blob([new Uint8Array(bytes)], { type: 'application/pdf' }), `파일정비소_${files.length}장.pdf`)
+      trackToolEvent('images-to-pdf', 'success', details)
     } catch (reason) {
+      trackToolEvent('images-to-pdf', 'error', details)
       setError(reason instanceof Error ? reason.message : 'PDF를 만드는 중 문제가 발생했습니다.')
     } finally {
       setProcessing(false)

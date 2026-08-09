@@ -4,6 +4,7 @@ import SelectedDocument from '../components/SelectedDocument'
 import { downloadPdf, errorMessage, loadPdf, pdfOutputName } from '../lib/pdf'
 import { rotatePdfPages } from '../lib/pdfOperations'
 import { ToolShell } from './ImageCompressor'
+import { fileSizeBucket, pageCountBucket, trackToolEvent } from '../lib/analytics'
 
 export default function PdfRotate() {
   const [file, setFile] = useState<File | null>(null)
@@ -25,11 +26,15 @@ export default function PdfRotate() {
 
   const rotate = async () => {
     if (!file) return
+    const details = { sizeBucket: fileSizeBucket(file.size), pageBucket: pageCountBucket(pageCount), inputFormat: 'PDF', outputFormat: 'PDF' }
+    trackToolEvent('pdf-rotate', 'start', details)
     setProcessing(true); setError('')
     try {
       const document = await rotatePdfPages(file, rotation)
       await downloadPdf(document, pdfOutputName(file.name, `${rotation}도회전`))
+      trackToolEvent('pdf-rotate', 'success', details)
     } catch (reason) {
+      trackToolEvent('pdf-rotate', 'error', details)
       setError(errorMessage(reason, 'PDF를 회전하는 중 문제가 발생했습니다.'))
     } finally {
       setProcessing(false)

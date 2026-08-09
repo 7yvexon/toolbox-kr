@@ -5,6 +5,7 @@ import { downloadBlob, formatBytes, renderImage, replaceExtension } from '../lib
 import { errorMessage } from '../lib/pdf'
 import { validateImageBatch } from '../lib/fileValidation'
 import { ToolShell } from './ImageCompressor'
+import { fileSizeBucket, itemCountBucket, totalFileSize, trackToolEvent } from '../lib/analytics'
 
 export default function ImageConverter() {
   const [files, setFiles] = useState<File[]>([])
@@ -26,6 +27,8 @@ export default function ImageConverter() {
 
   const convert = async () => {
     if (!files.length) return
+    const details = { sizeBucket: fileSizeBucket(totalFileSize(files)), countBucket: itemCountBucket(files.length), inputFormat: 'IMAGE', outputFormat: outputType === 'image/png' ? 'PNG' : outputType === 'image/webp' ? 'WEBP' : 'JPG' }
+    trackToolEvent('image-convert', 'start', details)
     setProcessing(true); setError('')
     try {
       const extension = outputType === 'image/png' ? 'png' : outputType === 'image/webp' ? 'webp' : 'jpg'
@@ -39,9 +42,11 @@ export default function ImageConverter() {
       } else {
         const zip = new JSZip()
         results.forEach((result, index) => zip.file(`${String(index + 1).padStart(2, '0')}_${result.filename}`, result.blob))
-      downloadBlob(await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } }), `파일정비소_${extension}_변환_${results.length}개.zip`)
+        downloadBlob(await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } }), `파일정비소_${extension}_변환_${results.length}개.zip`)
       }
+      trackToolEvent('image-convert', 'success', details)
     } catch (reason) {
+      trackToolEvent('image-convert', 'error', details)
       setError(errorMessage(reason, '이미지 형식을 변환하는 중 문제가 발생했습니다.'))
     } finally {
       setProcessing(false)

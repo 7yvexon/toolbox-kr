@@ -4,6 +4,7 @@ import SelectedDocument from '../components/SelectedDocument'
 import { downloadPdf, errorMessage, loadPdf, pdfOutputName } from '../lib/pdf'
 import { extractPdfRange } from '../lib/pdfOperations'
 import { ToolShell } from './ImageCompressor'
+import { fileSizeBucket, pageCountBucket, trackToolEvent } from '../lib/analytics'
 
 export default function PdfSplit() {
   const [file, setFile] = useState<File | null>(null)
@@ -31,11 +32,15 @@ export default function PdfSplit() {
       setError('시작 페이지와 끝 페이지를 올바르게 입력해 주세요.')
       return
     }
+    const details = { sizeBucket: fileSizeBucket(file.size), pageBucket: pageCountBucket(endPage - startPage + 1), inputFormat: 'PDF', outputFormat: 'PDF' }
+    trackToolEvent('pdf-split', 'start', details)
     setProcessing(true); setError('')
     try {
       const output = await extractPdfRange(file, startPage, endPage)
       await downloadPdf(output, pdfOutputName(file.name, `${startPage}-${endPage}페이지`))
+      trackToolEvent('pdf-split', 'success', details)
     } catch (reason) {
+      trackToolEvent('pdf-split', 'error', details)
       setError(errorMessage(reason, 'PDF 페이지를 추출하는 중 문제가 발생했습니다.'))
     } finally {
       setProcessing(false)

@@ -4,6 +4,7 @@ import SelectedDocument from '../components/SelectedDocument'
 import { downloadPdf, errorMessage, loadPdf, pdfOutputName } from '../lib/pdf'
 import { addPdfPageNumbers } from '../lib/pdfOperations'
 import { ToolShell } from './ImageCompressor'
+import { fileSizeBucket, pageCountBucket, trackToolEvent } from '../lib/analytics'
 
 export default function PdfPageNumbers() {
   const [file, setFile] = useState<File | null>(null)
@@ -29,11 +30,15 @@ export default function PdfPageNumbers() {
       setError('시작 번호는 1 이상의 정수로 입력해 주세요.')
       return
     }
+    const details = { sizeBucket: fileSizeBucket(file.size), pageBucket: pageCountBucket(pageCount), inputFormat: 'PDF', outputFormat: 'PDF' }
+    trackToolEvent('pdf-page-numbers', 'start', details)
     setProcessing(true); setError('')
     try {
       const document = await addPdfPageNumbers(file, startNumber, position)
       await downloadPdf(document, pdfOutputName(file.name, '페이지번호'))
+      trackToolEvent('pdf-page-numbers', 'success', details)
     } catch (reason) {
+      trackToolEvent('pdf-page-numbers', 'error', details)
       setError(errorMessage(reason, '페이지 번호를 넣는 중 문제가 발생했습니다.'))
     } finally {
       setProcessing(false)

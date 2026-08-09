@@ -4,6 +4,7 @@ import FileDrop from '../components/FileDrop'
 import { downloadBlob, formatBytes, replaceExtension } from '../lib/files'
 import { validateHeic } from '../lib/fileValidation'
 import { ToolShell } from './ImageCompressor'
+import { fileSizeBucket, trackToolEvent } from '../lib/analytics'
 
 export default function HeicConverter() {
   const [file, setFile] = useState<File | null>(null)
@@ -34,12 +35,16 @@ export default function HeicConverter() {
 
   const convert = async () => {
     if (!file) return
+    const details = { sizeBucket: fileSizeBucket(file.size), inputFormat: 'HEIC', outputFormat: 'JPG' }
+    trackToolEvent('heic-to-jpg', 'start', details)
     setProcessing(true)
     setError('')
     try {
       const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: quality / 100 })
       setResult(Array.isArray(converted) ? converted[0] : converted)
+      trackToolEvent('heic-to-jpg', 'success', details)
     } catch {
+      trackToolEvent('heic-to-jpg', 'error', details)
       setError('이 HEIC 파일을 변환하지 못했습니다. 다른 파일로 다시 시도해 주세요.')
     } finally {
       setProcessing(false)
