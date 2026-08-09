@@ -16,7 +16,8 @@ import {
 } from '../lib/analytics.mts'
 
 const noStoreHeaders = { 'cache-control': 'no-store', 'content-type': 'application/json; charset=utf-8' }
-const respond = (status: number, body = '') => new Response(body, { status, headers: noStoreHeaders })
+const respond = (status: number, body = '') =>
+  new Response(status === 204 ? null : body, { status, headers: noStoreHeaders })
 
 const isBot = (userAgent: string) => /bot|crawler|spider|slurp|facebookexternalhit|preview|headless|lighthouse|curl|wget/i.test(userAgent)
 
