@@ -117,6 +117,21 @@ Vercel, Netlify 또는 Cloudflare Pages에서 저장소를 연결한 뒤 정적 
 
 방문 알림은 페이지 방문마다, 도구 알림은 변환 시작·성공·실패마다 전송하며, IP는 뒤쪽 구간을 마스킹하고 Discord 스포일러로 감춥니다. 일일 보고 함수는 한국 시간 오전 12시 10분에 전날 통계를 전송합니다. 자체 통계는 브라우저에 쿠키를 저장하지 않으며 Global Privacy Control과 추적 거부 신호를 존중합니다.
 
+### Discord 운영 봇
+
+Discord Developer Portal에서 애플리케이션을 만든 뒤 공개 키(`DISCORD_PUBLIC_KEY`), 애플리케이션 ID(`DISCORD_APPLICATION_ID`), 서버 ID(`DISCORD_GUILD_ID`), 운영자 사용자 ID(`DISCORD_ADMIN_USER_IDS`)를 설정합니다. Discord의 Interactions Endpoint URL은 `https://file-repair-shop-kr.netlify.app/api/discord/interactions`로 지정합니다. 봇 초대 시 `bot`과 `applications.commands` 범위만 사용하세요.
+
+명령어 등록은 봇 토큰을 로컬 환경변수로만 넣고 다음을 실행합니다. 토큰은 Netlify에 저장하거나 채팅·저장소에 붙여 넣지 않습니다.
+
+```powershell
+$env:DISCORD_APPLICATION_ID='...'
+$env:DISCORD_GUILD_ID='...'
+$env:DISCORD_BOT_TOKEN='...'
+npm run discord:register
+```
+
+등록되는 운영자 전용 명령어는 `/stats`, `/status`, `/errors`입니다. 상호작용 엔드포인트는 Discord 서명과 재전송 시간을 검증하고, 서버 ID와 운영자 ID가 일치할 때만 통계를 응답합니다.
+
 `vercel.json`은 SPA 라우팅과 프로덕션 보안 헤더를 함께 관리합니다.
 
 최초 공개와 배포 후 확인 절차는 [배포 체크리스트](docs/DEPLOYMENT_CHECKLIST.md)를 따르세요.

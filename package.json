@@ -10,8 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b && npm run typecheck:functions",
-    "typecheck:functions": "tsc --ignoreConfig --noEmit --allowImportingTsExtensions --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --types node --skipLibCheck netlify/functions/analytics.mts netlify/functions/daily-analytics-report.mts netlify/lib/analytics.mts",
+    "typecheck:functions": "tsc --ignoreConfig --noEmit --allowImportingTsExtensions --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --types node --skipLibCheck netlify/functions/analytics.mts netlify/functions/daily-analytics-report.mts netlify/functions/discord-interactions.mts netlify/lib/analytics.mts",
     "security:audit": "npm audit --audit-level=high",
+    "discord:register": "node scripts/register-discord-commands.mjs",
     "check": "npm run test && npm run build && npm run security:audit",
     "check:offline": "npm run test && npm run build"
   },
