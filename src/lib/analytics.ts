@@ -67,7 +67,9 @@ export const trackPageView = (route: string) => {
   const now = Date.now()
   if (lastPageView.route === route && now - lastPageView.sentAt < 2_000) return
   lastPageView = { route, sentAt: now }
-  send({ kind: 'page_view', route })
+  const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
+  const responseMs = navigation && navigation.responseEnd > 0 ? Math.round(navigation.responseEnd) : undefined
+  send({ kind: 'page_view', route, ...(responseMs !== undefined ? { responseMs } : {}) })
 }
 
 export const trackToolEvent = (tool: AnalyticsTool, action: ToolAnalyticsAction, details: ToolAnalyticsDetails = {}) => {

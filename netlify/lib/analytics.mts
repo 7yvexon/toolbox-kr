@@ -33,6 +33,7 @@ export interface StoredAnalyticsEvent {
   pageBucket?: string
   inputFormat?: string
   outputFormat?: string
+  responseMs?: number
   occurredAt: string
 }
 

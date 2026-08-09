@@ -21,6 +21,7 @@ const respond = (status: number, body = '') =>
   new Response(status === 204 ? null : body, { status, headers: noStoreHeaders })
 
 const isBot = (userAgent: string) => /bot|crawler|spider|slurp|facebookexternalhit|preview|headless|lighthouse|curl|wget/i.test(userAgent)
+const safeResponseMs = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 120_000 ? Math.round(value) : undefined
 
 const isDiscordWebhook = (value: string) => {
   try {
@@ -59,6 +60,9 @@ const notifyAnalyticsEvent = async (event: StoredAnalyticsEvent, maskedIp: strin
   ]
   if (event.inputFormat || event.outputFormat) {
     fields.push({ name: '형식', value: `${event.inputFormat ?? '-'} → ${event.outputFormat ?? '-'}`, inline: true })
+  }
+  if (event.kind === 'page_view' && event.responseMs !== undefined) {
+    fields.push({ name: '응답시간', value: `${event.responseMs}ms\n브라우저 초기 응답 기준`, inline: true })
   }
 
   const body = {
@@ -130,6 +134,7 @@ export default async (request: Request, context: Context) => {
     pageBucket: optionalAllowed(payload.pageBucket, allowedPageBuckets),
     inputFormat: optionalAllowed(payload.inputFormat, allowedFormats),
     outputFormat: optionalAllowed(payload.outputFormat, allowedFormats),
+    responseMs: kind === 'page_view' ? safeResponseMs(payload.responseMs) : undefined,
     occurredAt: new Date().toISOString(),
   }
 
