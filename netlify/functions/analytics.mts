@@ -31,23 +31,46 @@ const isDiscordWebhook = (value: string) => {
   }
 }
 
-const notifyVisitor = async (event: StoredAnalyticsEvent, maskedIp: string) => {
+const notifyAnalyticsEvent = async (event: StoredAnalyticsEvent, maskedIp: string) => {
   const webhook = process.env.DISCORD_WEBHOOK_URL?.trim() ?? ''
   if (!isDiscordWebhook(webhook)) return
 
+  const status = event.kind === 'page_view'
+    ? '페이지 방문'
+    : event.kind === 'tool_start'
+      ? '변환 시작'
+      : event.kind === 'tool_success'
+        ? '변환 성공'
+        : '변환 실패'
+  const color = event.kind === 'tool_success'
+    ? 0x22c55e
+    : event.kind === 'tool_error'
+      ? 0xef4444
+      : event.kind === 'tool_start'
+        ? 0xf59e0b
+        : 0x3159ed
+  const fields: Array<{ name: string; value: string; inline?: boolean }> = [
+    { name: 'IP (부분 마스킹)', value: `||${maskedIp}||`, inline: true },
+    { name: '상태', value: status, inline: true },
+    { name: '기능', value: event.tool ?? '페이지 방문', inline: true },
+    { name: '접속 페이지', value: event.route, inline: true },
+    { name: '대략적인 지역', value: event.region, inline: true },
+    { name: '기기', value: event.device, inline: true },
+  ]
+  if (event.inputFormat || event.outputFormat) {
+    fields.push({ name: '형식', value: `${event.inputFormat ?? '-'} → ${event.outputFormat ?? '-'}`, inline: true })
+  }
+
   const body = {
-    username: '파일정비소 방문 알림',
+    username: '파일정비소 운영 알림',
     allowed_mentions: { parse: [] },
     embeds: [{
-      title: '익명 방문자 접속 감지',
-      color: 0x3159ed,
-      description: '파일정비소에 방문자가 접속했습니다. 같은 방문자의 재방문과 페이지 이동도 알림을 보냅니다.',
-      fields: [
-        { name: 'IP (부분 마스킹)', value: `||${maskedIp}||`, inline: true },
-        { name: '접속 페이지', value: event.route, inline: true },
-        { name: '대략적인 지역', value: event.region, inline: true },
-        { name: '기기', value: event.device, inline: true },
-      ],
+      title: event.kind === 'page_view' ? '익명 방문자 접속 감지' : `도구 사용: ${status}`,
+      color,
+      description: event.kind === 'page_view'
+        ? '페이지 방문, 재방문과 페이지 이동을 알립니다.'
+        : '파일명·파일 내용 없이 도구 사용 상태만 알립니다.',
+      fields,
       footer: { text: 'IP 일부만 표시하며 원본 파일·파일명·파일 내용은 전송하지 않음' },
       timestamp: event.occurredAt,
     }],
@@ -58,7 +81,7 @@ const notifyVisitor = async (event: StoredAnalyticsEvent, maskedIp: string) => {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!response.ok) throw new Error(`Discord new visitor webhook failed with ${response.status}.`)
+  if (!response.ok) throw new Error(`Discord analytics webhook failed with ${response.status}.`)
 }
 
 export default async (request: Request, context: Context) => {
@@ -112,12 +135,10 @@ export default async (request: Request, context: Context) => {
 
   try {
     await storeEvent(date, event)
-    if (kind === 'page_view') {
-      try {
-        await notifyVisitor(event, maskIp(context.ip))
-      } catch (error) {
-        console.error('Failed to send visitor alert', error)
-      }
+    try {
+      await notifyAnalyticsEvent(event, maskIp(context.ip))
+    } catch (error) {
+      console.error('Failed to send analytics alert', error)
     }
     return respond(204)
   } catch (error) {
