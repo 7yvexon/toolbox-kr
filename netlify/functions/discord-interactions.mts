@@ -65,11 +65,33 @@ const summarizeErrors = async () => {
   return `⚠️ **최근 변환 오류 ${events.length}건**\n${lines.join('\n')}`
 }
 
+const summarizeRegions = async () => {
+  const events = (await readEvents(koreanDate())).filter((event) => event.kind === 'page_view')
+  if (!events.length) return '📍 오늘 지역별 방문 기록이 없습니다.'
+
+  const byRegion = new Map<string, { visitors: Set<string>; views: number }>()
+  for (const event of events) {
+    const region = event.region?.trim() || '지역 미상'
+    const entry = byRegion.get(region) ?? { visitors: new Set<string>(), views: 0 }
+    entry.visitors.add(event.visitorId)
+    entry.views += 1
+    byRegion.set(region, entry)
+  }
+
+  const rows = [...byRegion.entries()]
+    .sort(([, a], [, b]) => b.visitors.size - a.visitors.size || b.views - a.views)
+    .slice(0, 10)
+    .map(([region, entry], index) => `${index + 1}. **${region}** · 방문자 ${entry.visitors.size}명 · 조회 ${entry.views}회`)
+
+  return `📍 **오늘 지역별 방문 통계 (${koreanDate()})**\n${rows.join('\n')}\n\n※ 개인정보 보호를 위해 IP 주소는 저장하거나 표시하지 않고, 지역은 Netlify가 제공하는 대략적인 지역 정보만 집계합니다.`
+}
+
 const commandResponse = async (name: string) => {
   if (name === 'stats') return summarizeStats()
   if (name === 'errors') return summarizeErrors()
+  if (name === 'regions') return summarizeRegions()
   if (name === 'status') return `🟢 **파일정비소 정상 운영 중**\n확인 시각: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`
-  return '사용할 수 있는 명령어: `/stats`, `/status`, `/errors`'
+  return '사용할 수 있는 명령어: `/stats`, `/regions`, `/status`, `/errors`'
 }
 
 export default async (request: Request) => {

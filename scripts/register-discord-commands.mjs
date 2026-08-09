@@ -9,6 +9,7 @@ const guildId = required('DISCORD_GUILD_ID')
 const botToken = required('DISCORD_BOT_TOKEN')
 const commands = [
   { name: 'stats', type: 1, description: '오늘 파일정비소 통계를 확인합니다.' },
+  { name: 'regions', type: 1, description: '오늘 방문자의 지역별 통계를 확인합니다.' },
   { name: 'status', type: 1, description: '파일정비소 운영 상태를 확인합니다.' },
   { name: 'errors', type: 1, description: '최근 변환 오류를 확인합니다.' },
 ]
