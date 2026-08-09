@@ -37,6 +37,21 @@ const labelHour = (date: Date) => {
   return `${parts.date} ${String(parts.hour).padStart(2, '0')}:00`
 }
 
+const measureSiteResponse = async () => {
+  const siteUrl = process.env.SITE_URL?.trim() || 'https://file-repair-shop-kr.netlify.app/'
+  const startedAt = Date.now()
+  try {
+    const response = await fetch(siteUrl, {
+      method: 'HEAD',
+      headers: { 'user-agent': 'FileRepairShop-HealthCheck/1.0', 'x-health-check': 'true' },
+      signal: AbortSignal.timeout(8_000),
+    })
+    return { status: response.status, durationMs: Date.now() - startedAt }
+  } catch {
+    return { status: undefined, durationMs: Date.now() - startedAt }
+  }
+}
+
 export default async () => {
   const webhook = process.env.DISCORD_WEBHOOK_URL?.trim() ?? ''
   if (!validWebhook(webhook)) throw new Error('DISCORD_WEBHOOK_URL is missing or invalid.')
@@ -62,6 +77,10 @@ export default async () => {
   for (const event of pageViews.sort((a, b) => a.occurredAt.localeCompare(b.occurredAt))) if (!firstVisit.has(event.visitorId)) firstVisit.set(event.visitorId, event)
   const successRate = starts.length ? Math.round((successes.length / starts.length) * 100) : 0
   const status = errors.length ? `⚠️ 오류 ${errors.length}건 확인 필요` : '✅ 정상'
+  const siteResponse = await measureSiteResponse()
+  const responseLabel = siteResponse.status
+    ? `${siteResponse.status === 200 ? '✅' : '⚠️'} ${siteResponse.durationMs}ms · HTTP ${siteResponse.status}`
+    : `❌ 확인 실패 · ${siteResponse.durationMs}ms`
 
   const body = {
     username: '파일정비소 통계봇', allowed_mentions: { parse: [] }, embeds: [{
@@ -70,6 +89,7 @@ export default async () => {
       description: '최근 1시간 집계입니다. 원본 IP·파일명·파일 내용은 저장하거나 전송하지 않습니다.',
       fields: [
         { name: '시스템 상태', value: status, inline: true },
+        { name: '사이트 응답', value: `${responseLabel}\nNetlify 함수 기준 HEAD 측정`, inline: true },
         { name: '방문', value: `순 방문자 **${visitors.size}명**\n페이지 조회 **${pageViews.length}회**`, inline: true },
         { name: '도구 처리', value: `시작 **${starts.length}회**\n성공 **${successes.length}회**\n실패 **${errors.length}회**\n성공률 **${successRate}%**`, inline: true },
         { name: '지역', value: formatTop([...firstVisit.values()].map((event) => event.region)), inline: false },
