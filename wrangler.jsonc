@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "file-repair-shop-kr",
+  "compatibility_date": "2026-08-09",
+  "pages_build_output_dir": "dist",
+  "kv_namespaces": [
+    {
+      "binding": "ANALYTICS_KV",
+      "id": "9c86493450da4a98817ecb8d303e740a"
+    }
+  ]
+}

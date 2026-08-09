@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .netlify/
+.wrangler/
 
 *.tsbuildinfo
 vite.config.js
