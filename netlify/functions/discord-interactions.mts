@@ -15,8 +15,7 @@ const verifyDiscordSignature = (rawBody: string, request: Request) => {
   const timestamp = request.headers.get('x-signature-timestamp')?.trim() ?? ''
   if (!/^[0-9a-f]{128}$/i.test(publicKey) || !/^[0-9a-f]{128}$/i.test(signature) || !/^\d+$/.test(timestamp)) return false
 
-  const timestampSeconds = Number(timestamp)
-  if (!Number.isSafeInteger(timestampSeconds) || Math.abs(Date.now() / 1000 - timestampSeconds) > 5 * 60) return false
+  if (!Number.isSafeInteger(Number(timestamp))) return false
 
   try {
     const key = createPublicKey({
