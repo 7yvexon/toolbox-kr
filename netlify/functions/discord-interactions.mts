@@ -1,4 +1,4 @@
-import { createPublicKey, verify } from 'node:crypto'
+import { webcrypto } from 'node:crypto'
 import type { Config } from '@netlify/functions'
 import { koreanDate, readEvents } from '../lib/analytics.mts'
 
@@ -7,24 +7,28 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
 })
 
-const publicKeyDerPrefix = Buffer.from('302a300506032b6570032100', 'hex')
-
-const verifyDiscordSignature = (rawBody: string, request: Request) => {
+const verifyDiscordSignature = async (rawBody: string, request: Request) => {
   const publicKey = process.env.DISCORD_PUBLIC_KEY?.trim() ?? ''
   const signature = request.headers.get('x-signature-ed25519')?.trim() ?? ''
   const timestamp = request.headers.get('x-signature-timestamp')?.trim() ?? ''
-  if (!/^[0-9a-f]{128}$/i.test(publicKey) || !/^[0-9a-f]{128}$/i.test(signature) || !/^\d+$/.test(timestamp)) return false
+  const validShape = /^[0-9a-f]{64}$/i.test(publicKey) && /^[0-9a-f]{128}$/i.test(signature) && /^\d+$/.test(timestamp)
+  if (!validShape) {
+    console.warn('Discord signature shape rejected', {
+      publicKeyConfigured: Boolean(publicKey),
+      publicKeyLength: publicKey.length,
+      signatureLength: signature.length,
+      timestampPresent: Boolean(timestamp),
+    })
+    return false
+  }
 
   if (!Number.isSafeInteger(Number(timestamp))) return false
 
   try {
-    const key = createPublicKey({
-      key: Buffer.concat([publicKeyDerPrefix, Buffer.from(publicKey, 'hex')]),
-      format: 'der',
-      type: 'spki',
-    })
-    return verify(null, Buffer.from(timestamp + rawBody), key, Buffer.from(signature, 'hex'))
-  } catch {
+    const key = await webcrypto.subtle.importKey('raw', Buffer.from(publicKey, 'hex'), { name: 'Ed25519' }, false, ['verify'])
+    return await webcrypto.subtle.verify('Ed25519', key, Buffer.from(signature, 'hex'), Buffer.from(timestamp + rawBody))
+  } catch (error) {
+    console.error('Discord signature verification error', error instanceof Error ? error.message : 'unknown error')
     return false
   }
 }
@@ -71,7 +75,7 @@ const commandResponse = async (name: string) => {
 export default async (request: Request) => {
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
   const rawBody = await request.text()
-  if (!verifyDiscordSignature(rawBody, request)) return json({ error: 'invalid_signature' }, 401)
+  if (!await verifyDiscordSignature(rawBody, request)) return json({ error: 'invalid_signature' }, 401)
 
   let payload: Record<string, any>
   try {
