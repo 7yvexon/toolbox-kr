@@ -1,3 +1,8 @@
+import { existsSync } from 'node:fs'
+import { loadEnvFile } from 'node:process'
+
+if (existsSync('.env')) loadEnvFile('.env')
+
 const required = (name) => {
   const value = process.env[name]?.trim()
   if (!value) throw new Error(`${name} 환경변수가 필요합니다.`)
