@@ -37,8 +37,6 @@ const escapeHtml = (value) => value.replaceAll('&', '&amp;').replaceAll('"', '&q
 const dist = resolve('dist')
 const template = await readFile(resolve(dist, 'index.html'), 'utf8')
 const localEnv = loadEnv(process.env.NODE_ENV || 'production', process.cwd(), '')
-// Cloudflare Pages is the canonical deployment. A build-time override can still
-// be supplied for a future custom domain, but never omit the sitemap in CI.
 const rawSiteUrl = (process.env.VITE_SITE_URL || process.env.SITE_URL || localEnv.VITE_SITE_URL || 'https://file-repair-shop-kr.pages.dev').replace(/\/$/, '')
 let configuredUrl = ''
 if (rawSiteUrl) {

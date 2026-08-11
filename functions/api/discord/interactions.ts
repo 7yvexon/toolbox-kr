@@ -1,4 +1,5 @@
 import { koreanDate, readEvents } from '../../_lib/analytics'
+import { isHourlyAlertEnabled, setHourlyAlertEnabled } from '../../_lib/hourlyAlert'
 
 interface Env {
   ANALYTICS_KV?: KVNamespace
@@ -55,6 +56,16 @@ const commandResponse = async (name: string, env: Env) => {
   return '사용법: `/stats`, `/regions`, `/status`, `/errors`'
 }
 
+const hourlyResponse = async (action: string | undefined, env: Env) => {
+  if (!env.ANALYTICS_KV) return '분석 저장소가 아직 연결되지 않았습니다.'
+  if (action === 'on') await setHourlyAlertEnabled(env.ANALYTICS_KV, true)
+  if (action === 'off') await setHourlyAlertEnabled(env.ANALYTICS_KV, false)
+  const enabled = await isHourlyAlertEnabled(env.ANALYTICS_KV)
+  const state = enabled ? '켜짐' : '꺼짐'
+  if (action === 'on' || action === 'off') return `⏱️ 1시간 알람을 **${state}** 상태로 변경했습니다.`
+  return `⏱️ 1시간 알람 상태: **${state}**\n사용법: \`/hourly action:on\` 또는 \`/hourly action:off\``
+}
+
 export const onRequestPost = async ({ request, env }: { request: Request; env: Env }) => {
   const rawBody = await request.text()
   if (!await verifySignature(rawBody, request, env)) return json({ error: 'invalid_signature' }, 401)
@@ -63,5 +74,8 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
   if (payload.type === 1) return json({ type: 1 })
   if (payload.type !== 2) return json({ type: 4, data: { content: '지원하지 않는 상호작용입니다.', flags: 64 } })
   if (!authorized(payload, env)) return json({ type: 4, data: { content: '운영자 전용 명령어입니다.', flags: 64, allowed_mentions: { parse: [] } } })
-  return json({ type: 4, data: { content: await commandResponse(payload.data?.name, env), allowed_mentions: { parse: [] } } })
+  const commandName = payload.data?.name
+  const action = Array.isArray(payload.data?.options) ? payload.data.options.find((option: any) => option?.name === 'action')?.value : undefined
+  const content = commandName === 'hourly' ? await hourlyResponse(action, env) : await commandResponse(commandName, env)
+  return json({ type: 4, data: { content, allowed_mentions: { parse: [] } } })
 }

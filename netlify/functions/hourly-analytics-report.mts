@@ -38,7 +38,7 @@ const labelHour = (date: Date) => {
 }
 
 const measureSiteResponse = async () => {
-  const siteUrl = process.env.SITE_URL?.trim() || 'https://file-repair-shop-kr.netlify.app/'
+  const siteUrl = process.env.SITE_URL?.trim() || 'https://file-repair-shop-kr.pages.dev/'
   const startedAt = Date.now()
   try {
     const response = await fetch(siteUrl, {
@@ -52,7 +52,20 @@ const measureSiteResponse = async () => {
   }
 }
 
+const isHourlyAlertEnabled = async () => {
+  const controlUrl = process.env.HOURLY_ALERT_CONTROL_URL?.trim() || 'https://file-repair-shop-kr.pages.dev/api/hourly-alert'
+  try {
+    const response = await fetch(controlUrl, { headers: { 'user-agent': 'FileRepairShop-HourlyReport/1.0' }, signal: AbortSignal.timeout(5_000) })
+    if (!response.ok) return true
+    const payload = await response.json() as { enabled?: unknown }
+    return payload.enabled !== false
+  } catch {
+    return true
+  }
+}
+
 export default async () => {
+  if (!await isHourlyAlertEnabled()) return new Response('Hourly report disabled', { status: 200 })
   const webhook = process.env.DISCORD_WEBHOOK_URL?.trim() ?? ''
   if (!validWebhook(webhook)) throw new Error('DISCORD_WEBHOOK_URL is missing or invalid.')
 
@@ -89,7 +102,7 @@ export default async () => {
       description: '최근 1시간 집계입니다. 원본 IP·파일명·파일 내용은 저장하거나 전송하지 않습니다.',
       fields: [
         { name: '시스템 상태', value: status, inline: true },
-        { name: '사이트 응답', value: `${responseLabel}\nNetlify 함수 기준 HEAD 측정`, inline: true },
+        { name: '사이트 응답', value: `${responseLabel}\nCloudflare Pages 기준 HEAD 측정`, inline: true },
         { name: '방문', value: `순 방문자 **${visitors.size}명**\n페이지 조회 **${pageViews.length}회**`, inline: true },
         { name: '도구 처리', value: `시작 **${starts.length}회**\n성공 **${successes.length}회**\n실패 **${errors.length}회**\n성공률 **${successRate}%**`, inline: true },
         { name: '지역', value: formatTop([...firstVisit.values()].map((event) => event.region)), inline: false },

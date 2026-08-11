@@ -12,6 +12,12 @@ const commands = [
   { name: 'regions', type: 1, description: '오늘 방문자의 지역별 통계를 확인합니다.' },
   { name: 'status', type: 1, description: '파일정비소 운영 상태를 확인합니다.' },
   { name: 'errors', type: 1, description: '최근 변환 오류를 확인합니다.' },
+  {
+    name: 'hourly', type: 1, description: '1시간 운영 알람을 켜거나 끕니다.',
+    options: [{ name: 'action', description: '알람 상태를 선택합니다.', type: 3, required: true, choices: [
+      { name: '켜기', value: 'on' }, { name: '끄기', value: 'off' }, { name: '상태 확인', value: 'status' },
+    ] }],
+  },
 ]
 
 const response = await fetch(`https://discord.com/api/v10/applications/${applicationId}/guilds/${guildId}/commands`, {
