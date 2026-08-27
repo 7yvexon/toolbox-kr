@@ -1,11 +1,24 @@
 import { webcrypto } from 'node:crypto'
 import type { Config } from '@netlify/functions'
 import { koreanDate, readEvents } from '../lib/analytics.mts'
+import { isFreshTimestamp, readLimitedBody } from '../lib/request.mts'
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
-  headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+  headers: {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'content-security-policy': "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+    'cross-origin-opener-policy': 'same-origin',
+    'cross-origin-resource-policy': 'same-origin',
+    'referrer-policy': 'no-referrer',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+  },
 })
+
+const MAX_DISCORD_REQUEST_BYTES = 64 * 1024
 
 const verifyDiscordSignature = async (rawBody: string, request: Request) => {
   const publicKey = process.env.DISCORD_PUBLIC_KEY?.trim() ?? ''
@@ -22,7 +35,7 @@ const verifyDiscordSignature = async (rawBody: string, request: Request) => {
     return false
   }
 
-  if (!Number.isSafeInteger(Number(timestamp))) return false
+  if (!isFreshTimestamp(timestamp)) return false
 
   try {
     const key = await webcrypto.subtle.importKey('raw', Buffer.from(publicKey, 'hex'), { name: 'Ed25519' }, false, ['verify'])
@@ -96,7 +109,8 @@ const commandResponse = async (name: string) => {
 
 export default async (request: Request) => {
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
-  const rawBody = await request.text()
+  const rawBody = await readLimitedBody(request, MAX_DISCORD_REQUEST_BYTES)
+  if (rawBody === null) return json({ error: 'payload_too_large' }, 413)
   if (!await verifyDiscordSignature(rawBody, request)) return json({ error: 'invalid_signature' }, 401)
 
   let payload: Record<string, any>

@@ -15,8 +15,19 @@ import {
   storeEvent,
   type StoredAnalyticsEvent,
 } from '../lib/analytics.mts'
+import { readLimitedBody } from '../lib/request.mts'
 
-const noStoreHeaders = { 'cache-control': 'no-store', 'content-type': 'application/json; charset=utf-8' }
+const noStoreHeaders = {
+  'cache-control': 'no-store',
+  'content-type': 'application/json; charset=utf-8',
+  'content-security-policy': "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+  'cross-origin-opener-policy': 'same-origin',
+  'cross-origin-resource-policy': 'same-origin',
+  'referrer-policy': 'no-referrer',
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+}
 const respond = (status: number, body = '') =>
   new Response(status === 204 ? null : body, { status, headers: noStoreHeaders })
 
@@ -108,8 +119,8 @@ export default async (request: Request, context: Context) => {
 
   let payload: Record<string, unknown>
   try {
-    const rawBody = await request.text()
-    if (rawBody.length > 4_096) return respond(413)
+    const rawBody = await readLimitedBody(request, 4_096)
+    if (rawBody === null) return respond(413)
     payload = JSON.parse(rawBody) as Record<string, unknown>
   } catch {
     return respond(400)

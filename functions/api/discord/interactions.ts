@@ -1,5 +1,6 @@
 import { koreanDate, readEvents } from '../../_lib/analytics'
 import { isHourlyAlertEnabled, setHourlyAlertEnabled } from '../../_lib/hourlyAlert'
+import { isFreshTimestamp, readLimitedBody } from '../../_lib/request'
 
 interface Env {
   ANALYTICS_KV?: KVNamespace
@@ -10,14 +11,26 @@ interface Env {
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
-  headers: { 'cache-control': 'no-store', 'content-type': 'application/json; charset=utf-8' },
+  headers: {
+    'cache-control': 'no-store',
+    'content-type': 'application/json; charset=utf-8',
+    'content-security-policy': "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+    'cross-origin-opener-policy': 'same-origin',
+    'cross-origin-resource-policy': 'same-origin',
+    'referrer-policy': 'no-referrer',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+  },
 })
+
+const MAX_DISCORD_REQUEST_BYTES = 64 * 1024
 
 const verifySignature = async (rawBody: string, request: Request, env: Env) => {
   const publicKey = env.DISCORD_PUBLIC_KEY?.trim() ?? ''
   const signature = request.headers.get('x-signature-ed25519')?.trim() ?? ''
   const timestamp = request.headers.get('x-signature-timestamp')?.trim() ?? ''
-  if (!/^[0-9a-f]{64}$/i.test(publicKey) || !/^[0-9a-f]{128}$/i.test(signature) || !/^\d+$/.test(timestamp)) return false
+  if (!/^[0-9a-f]{64}$/i.test(publicKey) || !/^[0-9a-f]{128}$/i.test(signature) || !isFreshTimestamp(timestamp)) return false
   try {
     const key = await crypto.subtle.importKey('raw', Uint8Array.from(publicKey.match(/.{2}/g)!, (part) => Number.parseInt(part, 16)), { name: 'Ed25519' }, false, ['verify'])
     return await crypto.subtle.verify('Ed25519', key, Uint8Array.from(signature.match(/.{2}/g)!, (part) => Number.parseInt(part, 16)), new TextEncoder().encode(timestamp + rawBody))
@@ -67,7 +80,8 @@ const hourlyResponse = async (action: string | undefined, env: Env) => {
 }
 
 export const onRequestPost = async ({ request, env }: { request: Request; env: Env }) => {
-  const rawBody = await request.text()
+  const rawBody = await readLimitedBody(request, MAX_DISCORD_REQUEST_BYTES)
+  if (rawBody === null) return json({ error: 'payload_too_large' }, 413)
   if (!await verifySignature(rawBody, request, env)) return json({ error: 'invalid_signature' }, 401)
   let payload: Record<string, any>
   try { payload = JSON.parse(rawBody) as Record<string, any> } catch { return json({ error: 'invalid_json' }, 400) }

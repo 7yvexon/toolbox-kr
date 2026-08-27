@@ -15,6 +15,7 @@ import {
   storeEvent,
   type StoredAnalyticsEvent,
 } from '../_lib/analytics'
+import { readLimitedBody } from '../_lib/request'
 
 interface Env {
   ANALYTICS_KV?: KVNamespace
@@ -24,11 +25,22 @@ interface Env {
 
 const json = (status: number, body = '') => new Response(status === 204 ? null : body, {
   status,
-  headers: { 'cache-control': 'no-store', 'content-type': 'application/json; charset=utf-8' },
+  headers: {
+    'cache-control': 'no-store',
+    'content-type': 'application/json; charset=utf-8',
+    'content-security-policy': "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+    'cross-origin-opener-policy': 'same-origin',
+    'cross-origin-resource-policy': 'same-origin',
+    'referrer-policy': 'no-referrer',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+  },
 })
 
 const isBot = (userAgent: string) => /bot|crawler|spider|slurp|facebookexternalhit|preview|headless|lighthouse|curl|wget/i.test(userAgent)
 const safeResponseMs = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 120_000 ? Math.round(value) : undefined
+const ANALYTICS_REQUESTS_PER_MINUTE = 60
 
 const validWebhook = (value: string) => {
   try {
@@ -64,19 +76,38 @@ const notify = async (env: Env, event: StoredAnalyticsEvent, ip: string) => {
   if (!response.ok) throw new Error(`Discord webhook failed: ${response.status}`)
 }
 
+const withinAnalyticsRateLimit = async (kv: KVNamespace, ip: string, secret: string, now = Date.now()) => {
+  const window = Math.floor(now / 60_000)
+  const visitorId = await dailyVisitorId(ip, secret, `rate-limit:${window}`)
+  const key = `rate-limits/${window}/${visitorId}`
+  const count = Number(await kv.get(key))
+  if (Number.isSafeInteger(count) && count >= ANALYTICS_REQUESTS_PER_MINUTE) return false
+  const nextCount = Number.isSafeInteger(count) && count > 0 ? count + 1 : 1
+  await kv.put(key, String(nextCount), { expirationTtl: 120 })
+  return true
+}
+
 export const onRequestPost = async ({ request, env, waitUntil }: { request: Request; env: Env; waitUntil: (promise: Promise<unknown>) => void }) => {
   if (request.headers.get('sec-gpc') === '1' || request.headers.get('dnt') === '1') return json(204)
-  if (request.headers.get('origin') && request.headers.get('origin') !== new URL(request.url).origin) return json(403)
+  if (request.headers.get('origin') !== new URL(request.url).origin) return json(403)
   if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return json(415)
   if (Number(request.headers.get('content-length') ?? 0) > 4_096) return json(413)
   const userAgent = request.headers.get('user-agent') ?? ''
   if (!userAgent || isBot(userAgent)) return json(204)
   if (!env.ANALYTICS_KV || !env.ANALYTICS_HASH_SECRET || env.ANALYTICS_HASH_SECRET.length < 32) return json(204)
+  const ip = request.headers.get('CF-Connecting-IP')
+  if (!ip) return json(403)
+  try {
+    if (!await withinAnalyticsRateLimit(env.ANALYTICS_KV, ip, env.ANALYTICS_HASH_SECRET)) return json(429)
+  } catch (error) {
+    console.error('Analytics rate limiting failed', error)
+    return json(503)
+  }
 
   let payload: Record<string, unknown>
   try {
-    const rawBody = await request.text()
-    if (rawBody.length > 4_096) return json(413)
+    const rawBody = await readLimitedBody(request, 4_096)
+    if (rawBody === null) return json(413)
     payload = JSON.parse(rawBody) as Record<string, unknown>
   } catch { return json(400) }
 
@@ -84,7 +115,6 @@ export const onRequestPost = async ({ request, env, waitUntil }: { request: Requ
   if (!kind) return json(400)
   const tool = optionalAllowed(payload.tool, allowedTools)
   if (kind !== 'page_view' && !tool) return json(400)
-  const ip = request.headers.get('CF-Connecting-IP') ?? '0.0.0.0'
   const cf = (request as Request & { cf?: { country?: string; region?: string; city?: string } }).cf
   const date = koreanDate()
   const event: StoredAnalyticsEvent = {

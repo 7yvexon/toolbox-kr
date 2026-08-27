@@ -2,6 +2,7 @@ import { createHmac, randomUUID } from 'node:crypto'
 import { getStore } from '@netlify/blobs'
 
 export const ANALYTICS_STORE = 'privacy-safe-analytics'
+export const MAX_ANALYTICS_EVENTS_PER_READ = 10_000
 
 export const allowedRoutes = new Set([
   '/', '/about', '/contact', '/guides', '/heic-to-jpg', '/hwp-to-pdf', '/image-compress',
@@ -87,12 +88,20 @@ export const storeEvent = async (date: string, event: StoredAnalyticsEvent) => {
   await store.setJSON(key, event)
 }
 
-export const readEvents = async (date: string) => {
+export const readEvents = async (date: string, maxEvents = MAX_ANALYTICS_EVENTS_PER_READ) => {
   const store = getStore({ name: ANALYTICS_STORE, consistency: 'strong' })
   const events: StoredAnalyticsEvent[] = []
+  const requestedLimit = Number.isFinite(maxEvents) ? Math.floor(maxEvents) : MAX_ANALYTICS_EVENTS_PER_READ
+  const readLimit = Math.max(1, Math.min(requestedLimit, MAX_ANALYTICS_EVENTS_PER_READ))
+  let inspected = 0
   for await (const page of store.list({ prefix: `events/${date}/`, paginate: true })) {
-    const values = await Promise.all(page.blobs.map((blob) => store.get(blob.key, { type: 'json', consistency: 'strong' })))
+    const remaining = readLimit - inspected
+    if (remaining <= 0) break
+    const blobs = page.blobs.slice(0, remaining)
+    const values = await Promise.all(blobs.map((blob) => store.get(blob.key, { type: 'json', consistency: 'strong' })))
     for (const value of values) if (value && typeof value === 'object') events.push(value as StoredAnalyticsEvent)
+    inspected += blobs.length
+    if (inspected >= readLimit) break
   }
   return events
 }

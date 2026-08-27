@@ -1,4 +1,5 @@
 export const ANALYTICS_TTL_SECONDS = 60 * 60 * 24 * 31
+export const MAX_ANALYTICS_EVENTS_PER_READ = 10_000
 
 export const allowedRoutes = new Set([
   '/', '/about', '/contact', '/guides', '/heic-to-jpg', '/hwp-to-pdf', '/image-compress',
@@ -73,15 +74,21 @@ export const storeEvent = async (kv: KVNamespace, date: string, event: StoredAna
   await kv.put(key, JSON.stringify(event), { expirationTtl: ANALYTICS_TTL_SECONDS })
 }
 
-export const readEvents = async (kv: KVNamespace, date: string) => {
+export const readEvents = async (kv: KVNamespace, date: string, maxEvents = MAX_ANALYTICS_EVENTS_PER_READ) => {
   const events: StoredAnalyticsEvent[] = []
+  const requestedLimit = Number.isFinite(maxEvents) ? Math.floor(maxEvents) : MAX_ANALYTICS_EVENTS_PER_READ
+  const readLimit = Math.max(1, Math.min(requestedLimit, MAX_ANALYTICS_EVENTS_PER_READ))
+  let inspected = 0
   let cursor: string | undefined
   do {
-    const page = await kv.list({ prefix: `events/${date}/`, cursor, limit: 1000 })
+    const remaining = readLimit - inspected
+    if (remaining <= 0) break
+    const page = await kv.list({ prefix: `events/${date}/`, cursor, limit: Math.min(1000, remaining) })
     const values = await Promise.all(page.keys.map(({ name }) => kv.get<StoredAnalyticsEvent>(name, 'json')))
     for (const value of values) if (value && typeof value === 'object') events.push(value)
+    inspected += page.keys.length
     cursor = page.list_complete ? undefined : page.cursor
-  } while (cursor)
+  } while (cursor && inspected < readLimit)
   return events
 }
 
