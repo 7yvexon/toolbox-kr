@@ -4,7 +4,7 @@
 
 설치와 회원가입 없이 사용하는 한국형 이미지·PDF 도구 모음입니다. 선택한 파일은 서버로 업로드하지 않고 사용자의 브라우저 안에서만 처리합니다.
 
-> 현재 단계: `0.1.0` MVP · 저장소는 비공개로 운영 중
+> 현재 단계: `0.1.0` MVP · Cloudflare Pages(`https://file-repair-shop-kr.pages.dev`)에 배포 중
 
 ## 주요 기능
 
@@ -44,7 +44,7 @@
 - `pdf-lib` — 브라우저 PDF 생성
 - PDF.js — PDF 페이지 렌더링
 - JSZip — 일괄 변환 결과 압축
-- Netlify Functions + Blobs — 개인정보 최소화 이용 통계와 예약 보고
+- Cloudflare Pages Functions + Workers KV — 개인정보 최소화 이용 통계와 Discord 운영 알림
 
 ## 로컬 실행
 
@@ -64,13 +64,14 @@ npm run dev
 | 명령어 | 설명 |
 | --- | --- |
 | `npm run dev` | 개발 서버 실행 |
-| `npm run typecheck` | TypeScript 검사 |
-| `npm run test` | 파일 검증 및 PDF 변환 자동 테스트 |
+| `npm run typecheck` | TypeScript 검사 (앱 + `functions/`) |
+| `npm run test` | 파일 검증, PDF 변환, 서버 보호 로직 자동 테스트 |
 | `npm run build` | 로컬 확인용 번들 생성 |
 | `npm run build:production` | 공개 주소·문의 이메일 확인 후 배포 번들 생성 |
+| `npm run check:dist` | `dist/`가 Cloudflare Pages 크기 상한(파일당 25 MiB, 20,000개) 안에 있는지 검사 |
 | `npm run preview` | 프로덕션 번들 로컬 확인 |
 | `npm run security:audit` | high 이상 npm 취약점 검사 |
-| `npm run check` | 빌드와 보안 감사를 한 번에 실행 |
+| `npm run check` | 테스트·빌드·배포 크기·보안 감사를 한 번에 실행 |
 
 ## 프로젝트 구조
 
@@ -79,9 +80,10 @@ src/
 ├─ components/          공통 UI
 ├─ lib/                 파일 검증·변환·통계 보조 함수
 └─ tools/               이미지 압축, HEIC, HWP, PDF 도구
-netlify/
-├─ functions/           통계 수집 API·신규 방문 알림·시간별·일일 Discord 보고
-└─ lib/                 서버 전용 검증·저장 계층
+functions/              Cloudflare Pages Functions (/api/*)
+├─ api/                 통계 수집·시간별 알람 설정·Discord 상호작용
+└─ _lib/                서버 전용 검증·저장 계층
+scripts/                배포 환경 점검, 정적 라우트 생성, 배포 크기 검사
 .github/
 ├─ workflows/           CI 자동 검사
 ├─ CODEOWNERS            중요 파일 소유자
@@ -94,7 +96,8 @@ netlify/
 
 1. lockfile 기반 `npm ci`
 2. TypeScript 및 프로덕션 빌드
-3. high 이상 공개 취약점 차단
+3. Cloudflare Pages 배포 크기 상한 검사 (`npm run check:dist`)
+4. high 이상 공개 취약점 차단
 
 GitHub Actions는 공식 액션도 변경 불가능한 커밋 SHA로 고정하며, 워크플로 토큰은 읽기 권한만 사용합니다. npm 및 GitHub Actions 업데이트는 Dependabot이 정기적으로 제안합니다.
 
@@ -102,26 +105,37 @@ GitHub Actions는 공식 액션도 변경 불가능한 커밋 SHA로 고정하�
 
 ## 배포
 
-Vercel, Netlify 또는 Cloudflare Pages에서 저장소를 연결한 뒤 정적 사이트로 배포할 수 있습니다. 수익화할 배포 서비스의 무료 플랜이 상업적 사용을 허용하는지는 별도로 확인해야 합니다.
+Cloudflare Pages에서 저장소를 연결해 배포합니다. 정적 자산은 `dist/`에서 제공하고 `/api/*`는 `functions/`의 Pages Functions가 처리합니다. 수익화할 때 무료 플랜이 상업적 사용을 허용하는지는 별도로 확인해야 합니다.
 
 - Build command: `npm run build:production`
-- Output directory: `dist`
+- Build output directory: `dist` (`wrangler.jsonc`의 `pages_build_output_dir`)
 - Node.js: 22.x
+- KV namespace: `ANALYTICS_KV` (`wrangler.jsonc`의 `kv_namespaces`)
 
-배포 환경 변수:
+`wrangler.jsonc`가 배포 설정의 기준입니다. 대시보드에 남아 있는 설정과 어긋날 수 있으니 `npx wrangler pages download config file-repair-shop-kr`로 실제 값을 확인해 비교하세요.
+
+배포 환경 변수(Cloudflare 대시보드의 Production 환경):
 
 - `VITE_SITE_URL`: 실제 공개 주소. 설정하면 canonical URL, `sitemap.xml`, `robots.txt`가 배포 주소에 맞게 생성됩니다.
 - `VITE_CONTACT_EMAIL`: 공식 문의 이메일. 프로덕션 배포에서는 반드시 설정해야 합니다.
 - `ANALYTICS_HASH_SECRET`: 32자 이상의 서버 전용 무작위 문자열. 원본 IP를 당일용 식별값으로 변환하는 데 사용합니다.
-- `DISCORD_WEBHOOK_URL`: 방문·도구 사용 알림과 일일 합계를 받을 비공개 Discord 채널의 웹후크 URL. 저장소나 클라이언트 코드에 넣지 않습니다.
+- `DISCORD_WEBHOOK_URL`: 방문·도구 사용 알림을 받을 비공개 Discord 채널의 웹후크 URL. 저장소나 클라이언트 코드에 넣지 않습니다.
 
-방문 알림은 페이지 방문마다, 도구 알림은 변환 시작·성공·실패마다 전송하며, IP는 뒤쪽 구간을 마스킹하고 Discord 스포일러로 감춥니다. 시간별 보고 함수는 최근 1시간의 익명 집계를 매시 정각에 전송하고, 일일 보고 함수는 한국 시간 오전 12시 10분에 전날 통계를 전송합니다. 자체 통계는 브라우저에 쿠키를 저장하지 않으며 Global Privacy Control과 추적 거부 신호를 존중합니다.
+방문 알림은 페이지 방문마다, 도구 알림은 변환 시작·성공·실패마다 전송하며, IP는 뒤쪽 구간을 마스킹하고 Discord 스포일러로 감춥니다. 1시간 알람 전송 여부는 KV의 `settings/hourly-alert` 값으로 관리하며 `/api/hourly-alert` 또는 Discord `/hourly` 명령으로 확인·변경합니다. 자체 통계는 브라우저에 쿠키를 저장하지 않으며 Global Privacy Control과 추적 거부 신호를 존중합니다.
+
+SPA 라우팅은 `scripts/generate-static-routes.mjs`가 경로별 `index.html`을 생성해 처리하고, CSP를 포함한 보안 헤더는 `public/_headers`가 관리합니다.
+
+### 배포 크기 상한
+
+Cloudflare Pages는 파일 하나가 25 MiB(26,214,400바이트)를 넘거나 배포 파일이 20,000개를 넘으면 배포 전체를 거부합니다. `npm run check:dist`(`scripts/check-dist-size.mjs`)가 빌드 후 `dist/`를 검사해 상한을 넘으면 exit 1로 실패하고, CI도 프로덕션 빌드 직후 같은 검사를 실행합니다.
+
+`@rhwp/core`를 `0.8.2`로 고정한 이유도 이 상한입니다. 0.9.x의 `rhwp_bg.wasm`은 26.59 MiB라 25 MiB 한도를 넘어 배포가 실패합니다(0.8.2는 6.86 MiB). Dependabot이 다시 0.9.x 범프 PR을 올리면 CI의 `check:dist`가 먼저 실패하므로, 버전을 올릴 때는 wasm 크기를 먼저 확인하세요.
 
 ### Discord 운영 봇
 
-Discord Developer Portal에서 애플리케이션을 만든 뒤 공개 키(`DISCORD_PUBLIC_KEY`), 애플리케이션 ID(`DISCORD_APPLICATION_ID`), 서버 ID(`DISCORD_GUILD_ID`), 운영자 사용자 ID(`DISCORD_ADMIN_USER_IDS`)를 설정합니다. Discord의 Interactions Endpoint URL은 `https://file-repair-shop-kr.netlify.app/api/discord/interactions`로 지정합니다. 봇 초대 시 `bot`과 `applications.commands` 범위만 사용하세요.
+Discord Developer Portal에서 애플리케이션을 만든 뒤 공개 키(`DISCORD_PUBLIC_KEY`), 애플리케이션 ID(`DISCORD_APPLICATION_ID`), 서버 ID(`DISCORD_GUILD_ID`), 운영자 사용자 ID(`DISCORD_ADMIN_USER_IDS`)를 설정합니다. Discord의 Interactions Endpoint URL은 `https://file-repair-shop-kr.pages.dev/api/discord/interactions`로 지정합니다. 봇 초대 시 `bot`과 `applications.commands` 범위만 사용하세요.
 
-명령어 등록은 봇 토큰을 로컬 환경변수로만 넣고 다음을 실행합니다. 토큰은 Netlify에 저장하거나 채팅·저장소에 붙여 넣지 않습니다.
+명령어 등록은 봇 토큰을 로컬 환경변수로만 넣고 다음을 실행합니다. 토큰은 Cloudflare 환경변수에 저장하거나 채팅·저장소에 붙여 넣지 않습니다.
 
 ```powershell
 $env:DISCORD_APPLICATION_ID='...'
@@ -130,9 +144,7 @@ $env:DISCORD_BOT_TOKEN='...'
 npm run discord:register
 ```
 
-등록되는 운영자 전용 명령어는 `/stats`, `/status`, `/errors`입니다. 상호작용 엔드포인트는 Discord 서명과 재전송 시간을 검증하고, 서버 ID와 운영자 ID가 일치할 때만 통계를 응답합니다.
-
-`vercel.json`은 SPA 라우팅과 프로덕션 보안 헤더를 함께 관리합니다.
+등록되는 운영자 전용 명령어는 `/stats`, `/regions`, `/status`, `/errors`와 1시간 알람을 켜고 끄는 `/hourly`입니다. 상호작용 엔드포인트는 Discord 서명과 재전송 시간을 검증하고, 서버 ID와 운영자 ID가 일치할 때만 통계를 응답합니다.
 
 최초 공개와 배포 후 확인 절차는 [배포 체크리스트](docs/DEPLOYMENT_CHECKLIST.md)를 따르세요.
 

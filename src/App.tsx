@@ -176,8 +176,8 @@ function Home({ navigate }: { navigate: (path: Route) => void }) {
   )
 }
 
-function LegalLayout({ eyebrow, title, children }: { eyebrow: string; title: string; children: ReactNode }) {
-  return <main className="legal-page page-shell"><header><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>최종 업데이트: 2026년 8월 9일</p></header><div className="legal-content">{children}</div></main>
+function LegalLayout({ eyebrow, title, children, updated = '2026년 8월 9일' }: { eyebrow: string; title: string; children: ReactNode; updated?: string }) {
+  return <main className="legal-page page-shell"><header><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>최종 업데이트: {updated}</p></header><div className="legal-content">{children}</div></main>
 }
 
 function SupportPage() {
@@ -190,7 +190,7 @@ function AboutPage() {
 
 function PrivacyPage() {
   return (
-    <LegalLayout eyebrow="PRIVACY" title="개인정보처리방침">
+    <LegalLayout eyebrow="PRIVACY" title="개인정보처리방침" updated="2026년 11월 24일">
       <div className="legal-callout"><strong>핵심 원칙</strong><p>원본 파일과 변환 결과는 운영자 서버로 전송하지 않습니다. 서비스 개선을 위한 이용 통계에는 파일명·파일 내용·원본 IP를 저장하지 않으며, Discord에는 일부 마스킹된 IP를 포함한 방문 알림과 일일 합계를 전송합니다.</p></div>
       <section><h2>1. 처리하는 정보와 목적</h2><p>서비스 이용 시 접속 일시, 접속 페이지, 사용한 도구, 처리 시작·성공·오류 여부, 파일 크기·개수·페이지 수의 구간, 입력·출력 형식, 기기 유형, 국가 및 시·도 수준의 지역을 처리할 수 있습니다. 이 정보는 방문자 수와 기능 사용 현황 파악, 오류 개선, 서비스 안정성 확보를 위해서만 사용합니다. 파일명, 문서 제목, 파일 내용과 정확한 파일 크기는 수집하지 않습니다.</p><small className="law-reference">관련 기준: 개인정보 보호법 제15조(수집·이용), 제16조(최소 수집)</small></section>
       <section><h2>2. 익명 방문자 구분 방식</h2><p>하루 동안 중복 방문을 구분하기 위해 서버가 접속 IP와 날짜를 비밀키로 변환한 당일용 식별값을 생성합니다. 운영 통계에는 원본 IP를 저장하지 않고, 생성된 값은 날짜가 바뀌면 같은 이용자와 연결할 수 없도록 변경됩니다. 브라우저 지문이나 광고용 이용자 프로필은 만들지 않으며, 브라우저의 Global Privacy Control 또는 추적 거부 신호가 활성화된 경우 자체 이용 통계를 기록하지 않습니다.</p><small className="law-reference">당일용 식별값도 보유 중에는 보호가 필요한 정보로 취급합니다.</small></section>
@@ -199,7 +199,8 @@ function PrivacyPage() {
       <section><h2>5. 쿠키와 광고</h2><p>자체 이용 통계는 쿠키를 저장하지 않습니다. Google AdSense 광고가 승인되어 표시되는 경우 Google과 동의 관리 플랫폼이 광고 제공, 부정 이용 방지 및 동의 상태 저장을 위해 쿠키나 유사 기술을 사용할 수 있으며, 적용되는 지역에서는 동의 화면에서 선택할 수 있습니다. 광고 관련 처리는 Google의 정책과 이용자의 동의 설정에 따릅니다.</p><small className="law-reference">관련 기준: 개인정보 보호법 제17조(제3자 제공), 제28조의8(국외 이전)</small></section>
       <section><h2>6. 보유 기간과 파기</h2><p>자체 이용 통계 원본은 생성일부터 최대 31일 후 삭제합니다. Discord 방문·도구 사용 알림에는 원본 IP가 아닌 일부 마스킹된 IP만 포함되며, 당일용 식별값은 포함되지 않습니다. 문의 이메일은 답변과 분쟁 대응에 필요한 기간 동안 보관될 수 있으며, 목적이 달성되고 별도 보관 의무가 없으면 삭제합니다. 브라우저에서 처리한 파일은 서버에 저장되지 않습니다.</p><small className="law-reference">관련 기준: 개인정보 보호법 제21조(개인정보의 파기)</small></section>
       <section><h2>7. 이용자의 권리와 문의</h2><p>이용자는 자신에 관한 정보의 열람, 정정, 삭제 또는 처리 중지를 요청할 수 있습니다. 다만 당일용 식별값만으로는 특정 개인을 다시 알아볼 수 없어 요청 대상 기록을 확인하기 어려울 수 있습니다. 개인정보 관련 요청은 <a href="mailto:7yvexon@gmail.com">7yvexon@gmail.com</a>으로 보내 주세요.</p><small className="law-reference">관련 기준: 개인정보 보호법 제35조·제36조·제37조</small></section>
-      <section><h2>8. 안전성 확보와 방침 변경</h2><p>비밀키와 Discord 웹후크는 서버 전용 환경변수로 관리하고, 외부 입력값을 허용 목록으로 제한하며, 통계 수집 API에 요청 횟수 제한을 적용합니다. 이 방침은 2026년 8월 9일부터 적용되며, 처리 항목이나 외부 서비스가 중요하게 변경되면 적용 전에 사이트를 통해 알립니다.</p><small className="law-reference">관련 기준: 개인정보 보호법 제29조·제30조</small></section>
+      <section><h2>8. 개인정보 보호책임자</h2><p>파일정비소는 개인정보 보호법 제31조에 따라 개인정보 보호책임자를 지정합니다. 개인정보 보호책임자는 파일정비소 운영자가 맡으며, 개인정보 처리방침의 이행과 개인정보 관련 문의·불만 처리, 이용자의 열람·정정·삭제·처리정지 요청 접수를 담당합니다. 연락처는 <a href="mailto:7yvexon@gmail.com">7yvexon@gmail.com</a>입니다.</p><small className="law-reference">관련 기준: 개인정보 보호법 제30조(개인정보 처리방침의 설정·공개), 제31조(개인정보 보호책임자의 지정)</small></section>
+      <section><h2>9. 안전성 확보와 방침 변경</h2><p>비밀키와 Discord 웹후크는 서버 전용 환경변수로 관리하고, 외부 입력값을 허용 목록으로 제한하며, 통계 수집 API에 요청 횟수 제한을 적용합니다. 이 방침은 2026년 8월 9일부터 적용되었으며, 2026년 11월 24일에 개인정보 보호책임자 항목을 추가했습니다. 처리 항목이나 외부 서비스가 중요하게 변경되면 적용 전에 사이트를 통해 알립니다.</p><small className="law-reference">관련 기준: 개인정보 보호법 제29조·제30조</small></section>
     </LegalLayout>
   )
 }
@@ -209,7 +210,7 @@ function TermsPage() {
 }
 
 function LegalNoticePage() {
-  return <LegalLayout eyebrow="LEGAL NOTICE" title="법적 고지"><div className="legal-callout"><strong>먼저 확인하세요</strong><p>아래 내용은 현재 파일정비소의 기능과 운영 방식에 맞춘 일반적인 법적 안내이며 개별 사안에 대한 법률 자문은 아닙니다. 유료 결제, 광고, 회원가입 또는 서버 업로드 기능을 추가하면 정책과 의무를 다시 검토해야 합니다.</p></div><section><h2>개인정보 보호의 기본 법률</h2><p>현재 개인정보 관련 운영 기준은 주로 「개인정보 보호법」입니다. 파일정비소는 제30조에 맞춰 처리방침을 공개하고, 문의 이메일을 처리할 때 제15조와 제16조의 적법한 처리·최소 수집 원칙을 따르며, 불필요해진 정보는 제21조에 따라 파기하고, 제29조의 안전성 확보 조치를 적용합니다. 이용자의 열람·정정·삭제·처리정지 요청은 제35조부터 제37조까지를 기준으로 안내합니다.</p><a className="law-link" href="https://www.law.go.kr/법령/개인정보보호법" target="_blank" rel="noreferrer">국가법령정보센터에서 개인정보 보호법 확인 ↗</a></section><section><h2>정보통신망법은 이렇게 구분합니다</h2><p>「정보통신망법」을 개인정보처리방침의 근거처럼 무조건 나열하면 오히려 부정확할 수 있습니다. 현재 파일정비소에는 게시판이나 이용자 파일 공개·유통 기능이 없으므로 불법정보 유통을 다루는 제44조의7이 핵심 운영 조항은 아닙니다. 향후 파일 공유, 공개 링크 또는 게시 기능을 추가할 때 해당 법률의 적용 범위를 별도로 검토합니다.</p><a className="law-link" href="https://www.law.go.kr/법령/정보통신망이용촉진및정보보호등에관한법률" target="_blank" rel="noreferrer">국가법령정보센터에서 정보통신망법 확인 ↗</a></section><section><h2>저작권과 파일 사용 권한</h2><p>변환 도구를 사용한다는 사실만으로 저작권 문제가 생기는 것은 아니지만, 권한 없이 타인의 저작물을 복제·배포하거나 2차적 저작물을 작성하면 권리를 침해할 수 있습니다. 이용약관에서 사용자가 소유하거나 처리 권한을 가진 파일만 사용하도록 안내하며, 침해 행위에는 「저작권법」 제136조 등 관련 규정이 적용될 수 있습니다.</p><a className="law-link" href="https://www.law.go.kr/법령/저작권법" target="_blank" rel="noreferrer">국가법령정보센터에서 저작권법 확인 ↗</a></section><section><h2>유료화 전에 추가할 내용</h2><p>현재 서비스는 무료이며 결제를 받지 않습니다. 구독이나 유료 변환권을 판매하면 「전자상거래법」 제13조에 따른 사업자 신원·거래조건 표시, 청약철회와 환불 기준, 결제 및 소비자 분쟁 처리 절차를 이용약관과 결제 화면에 추가해야 합니다. 실제 판매 방식이 정해진 뒤 통신판매업 신고 대상 여부도 확인해야 합니다.</p><a className="law-link" href="https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률" target="_blank" rel="noreferrer">국가법령정보센터에서 전자상거래법 확인 ↗</a></section></LegalLayout>
+  return <LegalLayout eyebrow="LEGAL NOTICE" title="법적 고지"><div className="legal-callout"><strong>먼저 확인하세요</strong><p>아래 내용은 현재 파일정비소의 기능과 운영 방식에 맞춘 일반적인 법적 안내이며 개별 사안에 대한 법률 자문은 아닙니다. 유료 결제, 광고, 회원가입 또는 서버 업로드 기능을 추가하면 정책과 의무를 다시 검토해야 합니다.</p></div><section><h2>개인정보 보호의 기본 법률</h2><p>현재 개인정보 관련 운영 기준은 주로 「개인정보 보호법」입니다. 파일정비소는 제30조에 맞춰 처리방침을 공개하고, 제31조에 따라 개인정보 보호책임자를 지정해 연락처를 함께 공개하며, 문의 이메일을 처리할 때 제15조와 제16조의 적법한 처리·최소 수집 원칙을 따르며, 불필요해진 정보는 제21조에 따라 파기하고, 제29조의 안전성 확보 조치를 적용합니다. 이용자의 열람·정정·삭제·처리정지 요청은 제35조부터 제37조까지를 기준으로 안내합니다.</p><a className="law-link" href="https://www.law.go.kr/법령/개인정보보호법" target="_blank" rel="noreferrer">국가법령정보센터에서 개인정보 보호법 확인 ↗</a></section><section><h2>정보통신망법은 이렇게 구분합니다</h2><p>「정보통신망법」을 개인정보처리방침의 근거처럼 무조건 나열하면 오히려 부정확할 수 있습니다. 현재 파일정비소에는 게시판이나 이용자 파일 공개·유통 기능이 없으므로 불법정보 유통을 다루는 제44조의7이 핵심 운영 조항은 아닙니다. 향후 파일 공유, 공개 링크 또는 게시 기능을 추가할 때 해당 법률의 적용 범위를 별도로 검토합니다.</p><a className="law-link" href="https://www.law.go.kr/법령/정보통신망이용촉진및정보보호등에관한법률" target="_blank" rel="noreferrer">국가법령정보센터에서 정보통신망법 확인 ↗</a></section><section><h2>저작권과 파일 사용 권한</h2><p>변환 도구를 사용한다는 사실만으로 저작권 문제가 생기는 것은 아니지만, 권한 없이 타인의 저작물을 복제·배포하거나 2차적 저작물을 작성하면 권리를 침해할 수 있습니다. 이용약관에서 사용자가 소유하거나 처리 권한을 가진 파일만 사용하도록 안내하며, 침해 행위에는 「저작권법」 제136조 등 관련 규정이 적용될 수 있습니다.</p><a className="law-link" href="https://www.law.go.kr/법령/저작권법" target="_blank" rel="noreferrer">국가법령정보센터에서 저작권법 확인 ↗</a></section><section><h2>유료화 전에 추가할 내용</h2><p>현재 서비스는 무료이며 결제를 받지 않습니다. 구독이나 유료 변환권을 판매하면 「전자상거래법」 제13조에 따른 사업자 신원·거래조건 표시, 청약철회와 환불 기준, 결제 및 소비자 분쟁 처리 절차를 이용약관과 결제 화면에 추가해야 합니다. 실제 판매 방식이 정해진 뒤 통신판매업 신고 대상 여부도 확인해야 합니다.</p><a className="law-link" href="https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률" target="_blank" rel="noreferrer">국가법령정보센터에서 전자상거래법 확인 ↗</a></section></LegalLayout>
 }
 
 function ContactPage() {
