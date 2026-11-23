@@ -1,6 +1,21 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { loadEnv } from 'vite'
+import { absoluteUrl, stripBrandSuffix } from './seo-urls.mjs'
+
+// JSON-LD의 SoftwareApplication 대상이 되는 도구 페이지 (홈·가이드·정책 페이지 제외).
+const toolRoutes = new Set([
+  '/image-compress',
+  '/image-convert',
+  '/heic-to-jpg',
+  '/images-to-pdf',
+  '/pdf-merge',
+  '/pdf-split',
+  '/pdf-rotate',
+  '/pdf-to-jpg',
+  '/pdf-page-numbers',
+  '/hwp-to-pdf',
+])
 
 const routes = {
   '/': ['파일정비소 - 안전한 이미지·PDF 도구', '이미지 압축, HEIC JPG 변환, PDF 합치기와 나누기를 설치 없이 내 브라우저에서 처리하세요.'],
@@ -217,12 +232,14 @@ for (const [guidePath, sourcePath] of Object.entries(guideAliases)) {
   staticContent[guidePath] = {
     ...staticContent[sourcePath],
     label: '파일 작업 가이드',
-    heading: routes[guidePath][0],
+    // 가이드 문서의 실제 h1(GuideArticle)과 같도록 브랜드 접미사를 붙이지 않습니다.
+    heading: stripBrandSuffix(routes[guidePath][0]),
     intro: routes[guidePath][1],
   }
 }
 
 const escapeHtml = (value) => value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+const serializeJsonLd = (value) => JSON.stringify(value).replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('&', '\\u0026')
 const renderStaticFallback = (route, title, description) => {
   const content = staticContent[route] || {
     label: '파일 작업 안내',
@@ -234,7 +251,9 @@ const renderStaticFallback = (route, title, description) => {
     const paragraphs = section.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('')
     return `<section><h2>${escapeHtml(section.heading)}</h2>${paragraphs}</section>`
   }).join('')
-  const links = route === '/' ? '<a href="/guides">파일 작업 가이드</a><a href="/about">서비스 소개</a><a href="/privacy">개인정보처리방침</a><a href="/contact">문의하기</a>' : `<a href="/">홈으로 돌아가기</a><a href="/guides">관련 가이드 보기</a><a href="/privacy">개인정보처리방침</a>`
+  const links = route === '/'
+    ? '<a href="/guides/">파일 작업 가이드</a><a href="/about/">서비스 소개</a><a href="/privacy/">개인정보처리방침</a><a href="/contact/">문의하기</a>'
+    : `<a href="/">홈으로 돌아가기</a><a href="/guides/">관련 가이드 보기</a><a href="/privacy/">개인정보처리방침</a>`
   return `<main class="seo-fallback"><span class="seo-fallback-label">${escapeHtml(content.label)}</span><h1>${escapeHtml(content.heading)}</h1><p class="seo-fallback-intro">${escapeHtml(content.intro)}</p><div class="seo-fallback-sections">${sections}</div><nav class="seo-fallback-links" aria-label="관련 페이지">${links}</nav></main>`
 }
 const dist = resolve('dist')
@@ -250,8 +269,37 @@ if (rawSiteUrl) {
   configuredUrl = parsed.href.replace(/\/$/, '')
 }
 
+const buildStructuredData = (route, title, description) => {
+  const pageUrl = absoluteUrl(configuredUrl, route)
+  const name = stripBrandSuffix(title)
+  const homeUrl = absoluteUrl(configuredUrl, '/')
+  const graph = []
+  if (toolRoutes.has(route)) {
+    graph.push({
+      '@type': 'SoftwareApplication',
+      name,
+      description,
+      url: pageUrl,
+      applicationCategory: 'UtilitiesApplication',
+      operatingSystem: 'Web',
+      browserRequirements: '최신 웹 브라우저에서 실행되며 JavaScript가 필요합니다.',
+      inLanguage: 'ko-KR',
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' },
+      publisher: { '@type': 'Organization', name: '파일정비소', url: homeUrl },
+    })
+  }
+  const itemListElement = [{ '@type': 'ListItem', position: 1, name: '홈', item: homeUrl }]
+  if (route.startsWith('/guides/')) {
+    itemListElement.push({ '@type': 'ListItem', position: 2, name: '파일 작업 가이드', item: absoluteUrl(configuredUrl, '/guides') })
+  }
+  itemListElement.push({ '@type': 'ListItem', position: itemListElement.length + 1, name, item: pageUrl })
+  graph.push({ '@type': 'BreadcrumbList', itemListElement })
+  return { '@context': 'https://schema.org', '@graph': graph }
+}
+
 for (const [route, [title, description]] of Object.entries(routes)) {
-  const canonical = configuredUrl ? `${configuredUrl}${route === '/' ? '/' : route}` : ''
+  const canonical = configuredUrl ? absoluteUrl(configuredUrl, route) : ''
   let html = template
     .replace(/<title>.*?<\/title>/, `<title>${escapeHtml(title)}</title>`)
     .replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtml(description)}" />`)
@@ -259,7 +307,16 @@ for (const [route, [title, description]] of Object.entries(routes)) {
     .replace(/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtml(description)}" />`)
   html = html.replace('<div id="root"></div>', `<div id="root">${renderStaticFallback(route, title, description)}</div>`)
   if (route !== '/') html = html.replace(/\s*<script id="website-structured-data"[\s\S]*?<\/script>/, '')
-  if (canonical) html = html.replace('</head>', `    <link rel="canonical" href="${canonical}" />\n    <meta property="og:url" content="${canonical}" />\n  </head>`)
+  if (canonical) {
+    const headTags = [
+      `    <link rel="canonical" href="${canonical}" />`,
+      `    <meta property="og:url" content="${canonical}" />`,
+    ]
+    if (route !== '/') {
+      headTags.push(`    <script id="static-route-structured-data" type="application/ld+json">${serializeJsonLd(buildStructuredData(route, title, description))}</script>`)
+    }
+    html = html.replace('  </head>', () => `${headTags.join('\n')}\n  </head>`)
+  }
   if (route === '/') await writeFile(resolve(dist, 'index.html'), html)
   else {
     const directory = resolve(dist, route.slice(1))
@@ -270,7 +327,7 @@ for (const [route, [title, description]] of Object.entries(routes)) {
 
 if (configuredUrl) {
   const lastModified = new Date().toISOString().slice(0, 10)
-  const urls = Object.keys(routes).map((route) => `  <url><loc>${configuredUrl}${route === '/' ? '/' : route}</loc><lastmod>${lastModified}</lastmod></url>`).join('\n')
+  const urls = Object.keys(routes).map((route) => `  <url><loc>${absoluteUrl(configuredUrl, route)}</loc><lastmod>${lastModified}</lastmod></url>`).join('\n')
   await writeFile(resolve(dist, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`)
   await writeFile(resolve(dist, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${configuredUrl}/sitemap.xml\n`)
 }
