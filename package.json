@@ -10,11 +10,12 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b && npm run typecheck:functions",
-    "typecheck:functions": "tsc --ignoreConfig --noEmit --allowImportingTsExtensions --target ES2022 --module NodeNext --moduleResolution NodeNext --lib ES2022,DOM --types node --skipLibCheck netlify/functions/analytics.mts netlify/functions/daily-analytics-report.mts netlify/functions/hourly-analytics-report.mts netlify/functions/discord-interactions.mts netlify/lib/analytics.mts",
+    "typecheck:functions": "tsc -p tsconfig.functions.json",
+    "check:dist": "node scripts/check-dist-size.mjs",
     "security:audit": "npm audit --audit-level=high",
     "discord:register": "node scripts/register-discord-commands.mjs",
-    "check": "npm run test && npm run build && npm run security:audit",
-    "check:offline": "npm run test && npm run build"
+    "check": "npm run test && npm run build && npm run check:dist && npm run security:audit",
+    "check:offline": "npm run test && npm run build && npm run check:dist"
   },
   "engines": {
     "node": ">=22",
@@ -22,8 +23,6 @@
   },
   "packageManager": "npm@11.11.0",
   "dependencies": {
-    "@netlify/blobs": "11.1.9",
-    "@netlify/functions": "^6.1.1",
     "@rhwp/core": "0.8.2",
     "heic2any": "^0.0.4",
     "jszip": "^3.10.2",
