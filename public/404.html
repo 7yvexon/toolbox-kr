@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#3156e8" />
+    <meta name="robots" content="noindex,follow" />
+    <title>페이지를 찾을 수 없습니다 (404) - 파일정비소</title>
+    <link rel="icon" href="/favicon-96.png" type="image/png" sizes="96x96" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <style>
+      :root {
+        --ink: #111827;
+        --muted: #667085;
+        --paper: #f7f8fb;
+        --brand: #3156e8;
+        --line: #e5e8ef;
+        color-scheme: light;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; }
+      a:focus-visible { outline: 3px solid #3156e840; outline-offset: 3px; }
+      .shell { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+      header.site-header { border-bottom: 1px solid #eceef2; background: #fff; }
+      .header-inner { height: 72px; display: flex; align-items: center; }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 760; letter-spacing: -0.035em; text-decoration: none; }
+      .brand-mark { position: relative; width: 32px; height: 32px; border-radius: 10px; background: var(--brand); display: block; }
+      .brand-mark i { position: absolute; left: 9px; height: 3px; border-radius: 2px; background: #fff; }
+      .brand-mark i:first-child { top: 10px; width: 14px; }
+      .brand-mark i:last-child { top: 18px; width: 10px; }
+      main { flex: 1; display: flex; align-items: center; padding: 72px 0 96px; }
+      .panel { width: 100%; max-width: 620px; padding: 44px 40px; border: 1px solid var(--line); border-radius: 24px; background: #fff; box-shadow: 0 18px 44px rgba(31, 49, 91, 0.06); }
+      .eyebrow { color: var(--brand); font-size: 11px; font-weight: 800; letter-spacing: 0.17em; }
+      .code { margin: 14px 0 0; color: #c7cee0; font-size: clamp(64px, 12vw, 104px); font-weight: 800; line-height: 1; letter-spacing: -0.06em; }
+      h1 { margin: 8px 0 14px; font-size: clamp(26px, 4vw, 34px); letter-spacing: -0.05em; line-height: 1.25; }
+      p { margin: 0 0 10px; color: var(--muted); font-size: 15px; line-height: 1.75; }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+      .button { display: inline-block; padding: 13px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; text-decoration: none; }
+      .button.primary { background: var(--brand); color: #fff; box-shadow: 0 8px 20px #3156e826; }
+      .button.primary:hover { background: #2749d2; }
+      .button.secondary { border: 1px solid #dfe3ea; background: #fff; color: #343b49; }
+      .button.secondary:hover { border-color: #c7ced9; }
+      .hint { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); font-size: 13px; }
+      .hint strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 13px; }
+      .hint a { color: var(--brand); text-decoration: underline; text-underline-offset: 3px; }
+      footer.site-footer { background: #111318; color: #fff; }
+      .footer-inner { min-height: 120px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+      .footer-logo { font-size: 18px; font-weight: 800; }
+      .footer-note { display: flex; gap: 20px; color: #98a2b3; font-size: 11px; }
+      @media (max-width: 600px) {
+        .shell { width: calc(100% - 32px); }
+        .panel { padding: 32px 22px; border-radius: 18px; }
+        main { padding: 48px 0 64px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="/" aria-label="파일정비소 홈">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+          <span>파일<strong>정비소</strong></span>
+        </a>
+      </div>
+    </header>
+    <main>
+      <div class="shell">
+        <div class="panel">
+          <span class="eyebrow">ERROR 404</span>
+          <p class="code" aria-hidden="true">404</p>
+          <h1>요청한 페이지를 찾을 수 없습니다</h1>
+          <p>주소가 바뀌었거나 삭제된 페이지일 수 있습니다. 아래에서 필요한 파일 도구를 다시 찾아보세요.</p>
+          <div class="actions">
+            <a class="button primary" href="/">파일정비소 홈으로</a>
+            <a class="button secondary" href="/guides/">파일 작업 가이드 보기</a>
+          </div>
+          <div class="hint">
+            <strong>자주 찾는 도구</strong>
+            <a href="/pdf-merge/">PDF 합치기</a> · <a href="/image-compress/">이미지 용량 줄이기</a> · <a href="/heic-to-jpg/">HEIC JPG 변환</a> · <a href="/hwp-to-pdf/">HWP PDF 변환</a>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <span class="footer-logo">파일정비소</span>
+        <span class="footer-note"><span>원본 업로드 없음</span><span>회원가입 없음</span></span>
+      </div>
+    </footer>
+  </body>
+</html>

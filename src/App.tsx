@@ -3,6 +3,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { GuideArticle, GuidesIndex } from './components/GuidePages'
 import { guideByPath, guides, type GuidePath } from './content/guides'
 import { trackPageView } from './lib/analytics'
+import { withTrailingSlash } from './lib/seoUrls'
 
 const ImageCompressor = lazy(() => import('./tools/ImageCompressor'))
 const HeicConverter = lazy(() => import('./tools/HeicConverter'))
@@ -71,7 +72,7 @@ function upsertMeta(selector: string, attribute: 'name' | 'property', key: strin
 
 function updateSeo(route: Route) {
   const info = routeInfo[route]
-  const canonical = new URL(route, window.location.origin).href
+  const canonical = new URL(withTrailingSlash(route), window.location.origin).href
   const guide = route.startsWith('/guides/') ? guideByPath[route as GuidePath] : undefined
   document.title = info.title
   upsertMeta('meta[name="description"]', 'name', 'description', info.description)
@@ -110,7 +111,8 @@ export default function App() {
   }, [route])
 
   const navigate = (path: Route) => {
-    if (normalisePath(window.location.pathname) !== path) window.history.pushState({}, '', path)
+    const href = withTrailingSlash(path)
+    if (window.location.pathname !== href) window.history.pushState({}, '', href)
     setRoute(path)
     setMenuOpen(false)
   }
@@ -128,8 +130,8 @@ export default function App() {
         <div className="nav-shell">
           <a className="brand" href="/" onClick={link('/')} aria-label="파일정비소 홈"><span className="brand-mark"><i></i><i></i></span><span>파일<strong>정비소</strong></span></a>
           <nav className={menuOpen ? 'nav-links is-open' : 'nav-links'} aria-label="주요 메뉴">
-            {navTools.map((tool) => <a className={route === tool.path ? 'active' : ''} href={tool.path} key={tool.path} onClick={link(tool.path)}>{tool.title}</a>)}
-            <a className={route === '/guides' || route.startsWith('/guides/') ? 'active' : ''} href="/guides" onClick={link('/guides')}>가이드</a>
+            {navTools.map((tool) => <a className={route === tool.path ? 'active' : ''} href={withTrailingSlash(tool.path)} key={tool.path} onClick={link(tool.path)}>{tool.title}</a>)}
+            <a className={route === '/guides' || route.startsWith('/guides/') ? 'active' : ''} href="/guides/" onClick={link('/guides')}>가이드</a>
           </nav>
           <div className="header-safe"><span></span>내 기기에서 안전 처리</div>
           <button className="menu-button" type="button" onClick={() => setMenuOpen((value) => !value)} aria-label="주요 메뉴" aria-expanded={menuOpen}>☰</button>
@@ -160,7 +162,7 @@ export default function App() {
           {route === '/contact' && <ContactPage />}
         </div>
       </ErrorBoundary>
-      <footer className="site-footer"><div className="footer-inner"><div><span className="footer-logo">파일정비소</span><p>복잡한 파일 작업을 가볍고 안전하게.</p></div><nav className="footer-links" aria-label="서비스와 고객 지원"><span className="footer-links-title">서비스</span><a href="/guides" onClick={link('/guides')}>파일 작업 가이드</a><a href="/about" onClick={link('/about')}>서비스 소개</a><a href="/support" onClick={link('/support')}>지원 범위</a><a href="/contact" onClick={link('/contact')}>문의하기</a></nav><nav className="footer-links" aria-label="법적 정책"><span className="footer-links-title">정책</span><a href="/privacy" onClick={link('/privacy')}>개인정보처리방침</a><a href="/terms" onClick={link('/terms')}>이용약관</a><a href="/legal" onClick={link('/legal')}>법적 고지</a></nav><div className="footer-note"><span>원본 업로드 없음</span><span>회원가입 없음</span></div></div></footer>
+      <footer className="site-footer"><div className="footer-inner"><div><span className="footer-logo">파일정비소</span><p>복잡한 파일 작업을 가볍고 안전하게.</p></div><nav className="footer-links" aria-label="서비스와 고객 지원"><span className="footer-links-title">서비스</span><a href="/guides/" onClick={link('/guides')}>파일 작업 가이드</a><a href="/about/" onClick={link('/about')}>서비스 소개</a><a href="/support/" onClick={link('/support')}>지원 범위</a><a href="/contact/" onClick={link('/contact')}>문의하기</a></nav><nav className="footer-links" aria-label="법적 정책"><span className="footer-links-title">정책</span><a href="/privacy/" onClick={link('/privacy')}>개인정보처리방침</a><a href="/terms/" onClick={link('/terms')}>이용약관</a><a href="/legal/" onClick={link('/legal')}>법적 고지</a></nav><div className="footer-note"><span>원본 업로드 없음</span><span>회원가입 없음</span></div></div></footer>
     </div>
   )
 }
@@ -169,8 +171,8 @@ function Home({ navigate }: { navigate: (path: Route) => void }) {
   return (
     <main className="home-page">
       <section className="hero"><div className="page-shell home-hero-inner"><div className="hero-copy"><div className="hero-kicker">설치 없이 바로 쓰는 파일 도구</div><h1>복잡한 파일 작업을<br /><em>더 쉽고 빠르게</em></h1><p>이미지 변환부터 PDF 편집까지 한곳에서 해결하세요.<br />파일은 서버가 아닌 내 브라우저에서 처리됩니다.</p><div className="hero-actions"><button className="button primary" type="button" onClick={() => navigate('/image-compress')}>무료로 시작하기</button><button className="button secondary" type="button" onClick={() => document.getElementById('all-tools')?.scrollIntoView({ behavior: 'smooth' })}>모든 도구 보기</button></div><div className="hero-proof"><span>회원가입 없음</span><span>횟수 제한 없음</span><span>원본 파일 저장 없음</span></div></div><figure className="hero-art hero-preview-art"><img src="/file-repair-preview.jpg" alt="문서와 이미지를 안전하게 변환하는 파일정비소 도구" width="1729" height="910" fetchPriority="high" /><figcaption><span>✓</span> 파일은 내 브라우저에서 처리됩니다</figcaption></figure></div></section>
-      <section className="tools-section" id="all-tools"><div className="page-shell"><div className="section-heading"><div><span className="eyebrow">FILE TOOLS</span><h2>필요한 작업을 선택하세요</h2><p>파일 종류와 작업 목적에 맞는 도구를 바로 찾을 수 있습니다.</p></div><span className="tools-count"><strong>{tools.length}</strong><span>개의 무료 도구</span></span></div><div className="tool-card-grid">{tools.map((tool, index) => <a className={`tool-card ${tool.tone}`} key={tool.path} href={tool.path} onClick={(event) => { event.preventDefault(); navigate(tool.path) }}><span className="tool-card-head"><span className="tool-icon">{tool.icon}</span><span className="tool-category">{tool.category}</span><span className="tool-index">{String(index + 1).padStart(2, '0')}</span></span><span className="tool-copy"><strong>{tool.title}</strong><span>{tool.description}</span></span><span className="tool-card-footer"><span className="tool-meta">{tool.meta}</span><span className="tool-arrow">→</span></span></a>)}</div><div className="hwp-roadmap"><span>HWP / HWPX</span><div><strong>호환 PDF 변환은 지원 범위를 먼저 알려드립니다.</strong><p>일반 본문과 표는 내용 확인용 이미지 PDF로 변환합니다. 원본과 같은 결과가 필요한 경우 한컴오피스의 PDF 저장 기능을 권장합니다.</p><button className="button secondary small" type="button" onClick={() => navigate('/hwp-to-pdf')}>지원 범위 확인하기</button></div></div></div></section>
-      <section className="home-guides"><div className="page-shell"><div className="home-guides-heading"><div><span className="eyebrow">PRACTICAL GUIDES</span><h2>변환보다 중요한<br />결과 확인 방법</h2></div><p>파일 형식 선택부터 제출 전 검수까지,<br />실수하기 쉬운 부분을 먼저 읽어보세요.</p><a href="/guides" onClick={(event) => { event.preventDefault(); navigate('/guides') }}>전체 가이드 보기 <b>→</b></a></div><div className="home-guide-grid">{guides.slice(0, 3).map((guide) => <a href={guide.path} key={guide.path} onClick={(event) => { event.preventDefault(); navigate(guide.path) }}><span>{guide.category} · {guide.readTime}</span><strong>{guide.title}</strong><p>{guide.description}</p><b>읽어보기 →</b></a>)}</div></div></section>
+      <section className="tools-section" id="all-tools"><div className="page-shell"><div className="section-heading"><div><span className="eyebrow">FILE TOOLS</span><h2>필요한 작업을 선택하세요</h2><p>파일 종류와 작업 목적에 맞는 도구를 바로 찾을 수 있습니다.</p></div><span className="tools-count"><strong>{tools.length}</strong><span>개의 무료 도구</span></span></div><div className="tool-card-grid">{tools.map((tool, index) => <a className={`tool-card ${tool.tone}`} key={tool.path} href={withTrailingSlash(tool.path)} onClick={(event) => { event.preventDefault(); navigate(tool.path) }}><span className="tool-card-head"><span className="tool-icon">{tool.icon}</span><span className="tool-category">{tool.category}</span><span className="tool-index">{String(index + 1).padStart(2, '0')}</span></span><span className="tool-copy"><strong>{tool.title}</strong><span>{tool.description}</span></span><span className="tool-card-footer"><span className="tool-meta">{tool.meta}</span><span className="tool-arrow">→</span></span></a>)}</div><div className="hwp-roadmap"><span>HWP / HWPX</span><div><strong>호환 PDF 변환은 지원 범위를 먼저 알려드립니다.</strong><p>일반 본문과 표는 내용 확인용 이미지 PDF로 변환합니다. 원본과 같은 결과가 필요한 경우 한컴오피스의 PDF 저장 기능을 권장합니다.</p><button className="button secondary small" type="button" onClick={() => navigate('/hwp-to-pdf')}>지원 범위 확인하기</button></div></div></div></section>
+      <section className="home-guides"><div className="page-shell"><div className="home-guides-heading"><div><span className="eyebrow">PRACTICAL GUIDES</span><h2>변환보다 중요한<br />결과 확인 방법</h2></div><p>파일 형식 선택부터 제출 전 검수까지,<br />실수하기 쉬운 부분을 먼저 읽어보세요.</p><a href="/guides/" onClick={(event) => { event.preventDefault(); navigate('/guides') }}>전체 가이드 보기 <b>→</b></a></div><div className="home-guide-grid">{guides.slice(0, 3).map((guide) => <a href={withTrailingSlash(guide.path)} key={guide.path} onClick={(event) => { event.preventDefault(); navigate(guide.path) }}><span>{guide.category} · {guide.readTime}</span><strong>{guide.title}</strong><p>{guide.description}</p><b>읽어보기 →</b></a>)}</div></div></section>
       <section className="promise-section"><div className="page-shell promise-inner"><div className="promise-title"><span className="privacy-large-icon">✓</span><div><span className="eyebrow">PRIVATE BY DESIGN</span><h2>파일은 내 기기에<br />그대로 남습니다.</h2></div></div><p>현재 제공하는 모든 변환은 사용 중인 브라우저 안에서 끝납니다.<br />선택한 파일의 내용과 변환 결과를 운영 서버에 저장하지 않습니다.</p><div className="promise-stats"><div><strong>0</strong><span>파일 서버 전송</span></div><div><strong>0</strong><span>원본 파일 보관</span></div><div><strong>10</strong><span>무료 파일 도구</span></div></div></div></section>
     </main>
   )
