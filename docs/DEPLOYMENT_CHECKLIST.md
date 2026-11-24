@@ -19,6 +19,7 @@ KV namespace `ANALYTICS_KV`는 `wrangler.jsonc`의 `kv_namespaces`에 선언되�
 ## 2. 배포 직후 확인
 
 - 응답 헤더 CSP에 `pagead2.googlesyndication.com`이 포함되는지 확인합니다(`curl -sI https://<주소>/`). 광고 출처가 없는 옛 CSP가 보이면 이전 배포가 그대로 살아 있는 것입니다.
+- Cloudflare Web Analytics를 쓰는 프로젝트라면 CSP `script-src`에 `https://static.cloudflareinsights.com`, `connect-src`에 `https://cloudflareinsights.com`이 있어야 비콘이 차단되지 않습니다. `curl -s https://<주소>/ | grep cloudflareinsights`로 주입된 비콘을, 브라우저 개발자 도구 콘솔로 CSP 위반이 없는지를 함께 확인합니다.
 - `/api/hourly-alert`가 `{"enabled":true}` 또는 `{"enabled":false}` JSON을 반환하는지 확인합니다. HTML이나 404가 오면 Functions가 배포되지 않은 것입니다.
 - `/hwp-to-pdf`에서 1페이지짜리 HWP를 실제로 변환해 결과 PDF를 열어 봅니다.
 - `/sitemap.xml`의 `lastmod`가 이번 배포 날짜인지 확인합니다.
